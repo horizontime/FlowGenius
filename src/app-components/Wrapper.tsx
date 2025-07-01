@@ -250,8 +250,8 @@ export default React.memo((props: any) => {
                 {/* Left Panel - Notes List */}
                 <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
                     <div className="flex flex-col h-full bg-muted/30">
-                        <div className="p-4 border-b">
-                            <div className="flex items-center gap-2 mb-3">
+                        <div className="p-4 border-b h-[88px] flex flex-col justify-between">
+                            <div className="flex items-center gap-2">
                                 <h2 className="font-semibold">Notes</h2>
                                 <Button size="sm" variant="ghost" onClick={handle_create_new_note}>
                                     <Plus className="h-4 w-4" />
@@ -386,8 +386,8 @@ export default React.memo((props: any) => {
                 {/* Middle Panel - Note Entries */}
                 <ResizablePanel defaultSize={30} minSize={20} maxSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="p-4 border-b">
-                            <div className="flex items-center justify-between">
+                        <div className="p-4 border-b h-[88px] flex items-center">
+                            <div className="flex items-center justify-between w-full">
                                 {editingMiddlePanelTitle && active_note ? (
                                     <form 
                                         onSubmit={(e) => {
@@ -580,7 +580,7 @@ export default React.memo((props: any) => {
                 {/* Right Panel - Content Editor */}
                 <ResizablePanel defaultSize={50} minSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between p-4 border-b app-dragger">
+                        <div className="flex items-center justify-between p-4 border-b app-dragger h-[88px]">
                             <h2 className="font-semibold">
                                 {selected_entry 
                                     ? selected_entry.heading || 'No heading'
