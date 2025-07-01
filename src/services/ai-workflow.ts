@@ -29,27 +29,46 @@ async function analyzeSubheading(state: typeof StateAnnotation.State) {
 // Gate function to check if response is valid
 function validateResponse(state: typeof StateAnnotation.State) {
   const response = (state.initialResponse as string) || "";
-  console.log("response", response);
-
-  // Check if response is at most 300 characters
+  const noteTitle = (state.noteTitle as string) || "";
+  const entryHeading = (state.entryHeading as string) || "";
+  
+  console.log("=== GATE FUNCTION DEBUG ===");
+  console.log("Response length:", response.length);
+  console.log("Response:", response);
+  console.log("Note title:", noteTitle);
+  console.log("Entry heading:", entryHeading);
+  
+  // Check if response is at most 350 characters
   if (response.length > 350) {
+    console.log("❌ Failed: Response too long");
     return "Fail";
   }
-
-
   
-  // Check if one word from title and one word from heading are in the response
-  const titleWords = (state.noteTitle as string).toLowerCase().split(/\s+/);
-  const headingWords = (state.entryHeading as string).toLowerCase().split(/\s+/);
+  // More flexible word matching - check if any meaningful word appears
+  const titleWords = noteTitle.toLowerCase().split(/\s+/).filter(word => word.length > 1);
+  const headingWords = entryHeading.toLowerCase().split(/\s+/).filter(word => word.length > 1);
   const responseLower = response.toLowerCase();
   
-  const hasTitleWord = titleWords.some((word: string) => word.length > 2 && responseLower.includes(word));
-  const hasHeadingWord = headingWords.some((word: string) => word.length > 2 && responseLower.includes(word));
+  console.log("Title words:", titleWords);
+  console.log("Heading words:", headingWords);
   
-  if (hasTitleWord && hasHeadingWord) {
+  // Check for word matches (allow shorter words and partial matches)
+  const matchingTitleWords = titleWords.filter(word => responseLower.includes(word));
+  const matchingHeadingWords = headingWords.filter(word => responseLower.includes(word));
+  
+  console.log("Matching title words:", matchingTitleWords);
+  console.log("Matching heading words:", matchingHeadingWords);
+  
+  // More lenient validation - just need ANY word match OR reasonable length response
+  const hasAnyMatch = matchingTitleWords.length > 0 || matchingHeadingWords.length > 0;
+  const hasReasonableLength = response.length > 50; // At least 50 characters
+  
+  if (hasAnyMatch && hasReasonableLength) {
+    console.log("✅ Passed validation");
     return "Pass";
   }
   
+  console.log("❌ Failed validation - hasAnyMatch:", hasAnyMatch, "hasReasonableLength:", hasReasonableLength);
   return "Fail";
 }
 
