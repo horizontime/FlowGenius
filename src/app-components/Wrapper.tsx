@@ -478,8 +478,8 @@ export default React.memo((props: any) => {
                                                             {entry.heading || 'No heading'}
                                                         </p>
                                                     )}
-                                                    <span className="text-xs text-muted-foreground mt-1">
-                                                        {entry.body ? 'Has content' : 'Empty'}
+                                                    <span className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                        {entry.body ? entry.body.replace(/\n/g, ' ').trim() : 'Empty'}
                                                     </span>
                                                 </div>
                                                 <Button
