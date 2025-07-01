@@ -3,28 +3,36 @@ import sqlite3 from "sqlite3";
 const db = new sqlite3.Database('notes.sql');
 
 const create_tables = () => {
-    // Drop existing tables to start fresh
-    db.run("DROP TABLE IF EXISTS notes");
-    
-    // Create notes table
-    db.run(`CREATE TABLE IF NOT EXISTS notes (
-        id INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-    )`);
-    
-    // Create note_entries table
-    db.run(`CREATE TABLE IF NOT EXISTS note_entries (
-        id INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT,
-        note_id INTEGER NOT NULL,
-        heading TEXT NOT NULL,
-        body TEXT,
-        order_index INTEGER NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
-    )`);
+    db.serialize(() => {
+        // // Drop existing tables to start fresh
+        // db.run("DROP TABLE IF EXISTS notes", (err) => {
+        //     if (err) console.error("Error dropping notes table:", err);
+        // });
+        
+        // Create notes table
+        db.run(`CREATE TABLE IF NOT EXISTS notes (
+            id INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )`, (err) => {
+            if (err) console.error("Error creating notes table:", err);
+        });
+        
+        // Create note_entries table
+        db.run(`CREATE TABLE IF NOT EXISTS note_entries (
+            id INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT,
+            note_id INTEGER NOT NULL,
+            heading TEXT NOT NULL,
+            body TEXT,
+            order_index INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+        )`, (err) => {
+            if (err) console.error("Error creating note_entries table:", err);
+        });
+    });
 }
 
 // Initialize tables

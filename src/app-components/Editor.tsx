@@ -1,10 +1,8 @@
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { useMainStore } from "@/shared/zust-store";
 import { INoteEntry } from "@/shared/types";
 
 export default React.memo((props: { entry: INoteEntry }) => {
-    const set_state = useMainStore(state => state.set_state);
     const [content, setContent] = React.useState('');
 
     React.useEffect(() => {
@@ -23,20 +21,14 @@ export default React.memo((props: { entry: INoteEntry }) => {
             const updatedNote = await window.electron.update_note_entry(updatedEntry);
             
             if (updatedNote) {
-                // Update the notes list
-                const updatedNotes = await window.electron.fetch_all_notes();
-                set_state('notes', updatedNotes);
-                
-                // Update selected entry with the new data
-                const newEntry = updatedNote.entries?.find((e: INoteEntry) => e.id === props.entry.id);
-                if (newEntry) {
-                    set_state('selected_entry', newEntry);
-                }
+                // Simply trigger a refresh of all notes
+                // The sync effect in Wrapper will handle updating active_note and selected_entry
+                await window.electron.fetch_all_notes();
             }
         } catch (e) {
             console.error("Error saving entry:", e);
         }
-    }, [props.entry, set_state]);
+    }, [props.entry]);
 
     const handle_change = React.useCallback((value: string) => {
         setContent(value);

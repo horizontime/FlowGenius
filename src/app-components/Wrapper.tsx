@@ -22,7 +22,7 @@ const formatDate = (timestamp: number) => {
 
 export default React.memo((props: any) => {
     const active_note = useMainStore(state => state.active_note);
-    const notes = useMainStore(state => state.notes);
+    const notes = useMainStore(state => state.notes || []);
     const selected_entry = useMainStore(state => state.selected_entry);
     const set_state = useMainStore(state => state.set_state);
     
@@ -33,6 +33,11 @@ export default React.memo((props: any) => {
     const [editingHeading, setEditingHeading] = React.useState('');
 
     const filteredNotes = React.useMemo(() => {
+        if (!Array.isArray(notes)) {
+            console.warn('Notes is not an array:', notes);
+            return [];
+        }
+        
         return notes.filter(note => {
             const searchLower = searchQuery.toLowerCase();
             // Search in note title
@@ -82,13 +87,15 @@ export default React.memo((props: any) => {
         if (note) {
             const updatedNote = { ...note, title: editingTitle };
             const updatedNotes = await window.electron.update_note(updatedNote);
-            set_state('notes', updatedNotes);
-            
-            // Update active note if it's the one being edited
-            if (active_note?.id === noteId) {
-                const newActiveNote = updatedNotes.find((n: INote) => n.id === noteId);
-                if (newActiveNote) {
-                    set_state('active_note', newActiveNote);
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+                
+                // Update active note if it's the one being edited
+                if (active_note?.id === noteId) {
+                    const newActiveNote = updatedNotes.find((n: INote) => n.id === noteId);
+                    if (newActiveNote) {
+                        set_state('active_note', newActiveNote);
+                    }
                 }
             }
         }
@@ -104,16 +111,18 @@ export default React.memo((props: any) => {
             if (updatedNote && active_note) {
                 // Update the notes list
                 const updatedNotes = await window.electron.fetch_all_notes();
-                set_state('notes', updatedNotes);
-                
-                // Update active note
-                const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
-                if (newActiveNote) {
-                    set_state('active_note', newActiveNote);
-                    // Update selected entry
-                    const newSelectedEntry = newActiveNote.entries?.find((e: INoteEntry) => e.id === entryId);
-                    if (newSelectedEntry) {
-                        set_state('selected_entry', newSelectedEntry);
+                if (Array.isArray(updatedNotes)) {
+                    set_state('notes', updatedNotes);
+                    
+                    // Update active note
+                    const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
+                    if (newActiveNote) {
+                        set_state('active_note', newActiveNote);
+                        // Update selected entry
+                        const newSelectedEntry = newActiveNote.entries?.find((e: INoteEntry) => e.id === entryId);
+                        if (newSelectedEntry) {
+                            set_state('selected_entry', newSelectedEntry);
+                        }
                     }
                 }
             }
@@ -133,18 +142,20 @@ export default React.memo((props: any) => {
             if (newNote) {
                 // Update the notes list
                 const updatedNotes = await window.electron.fetch_all_notes();
-                set_state('notes', updatedNotes);
-                
-                // Update active note
-                const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
-                if (newActiveNote) {
-                    set_state('active_note', newActiveNote);
-                    // Select and edit the new entry
-                    const newEntry = newActiveNote.entries?.[newActiveNote.entries.length - 1];
-                    if (newEntry) {
-                        set_state('selected_entry', newEntry);
-                        setEditingEntryId(newEntry.id);
-                        setEditingHeading('New Entry');
+                if (Array.isArray(updatedNotes)) {
+                    set_state('notes', updatedNotes);
+                    
+                    // Update active note
+                    const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
+                    if (newActiveNote) {
+                        set_state('active_note', newActiveNote);
+                        // Select and edit the new entry
+                        const newEntry = newActiveNote.entries?.[newActiveNote.entries.length - 1];
+                        if (newEntry) {
+                            set_state('selected_entry', newEntry);
+                            setEditingEntryId(newEntry.id);
+                            setEditingHeading('New Entry');
+                        }
                     }
                 }
             }
@@ -158,17 +169,19 @@ export default React.memo((props: any) => {
             if (updatedNote) {
                 // Update the notes list
                 const updatedNotes = await window.electron.fetch_all_notes();
-                set_state('notes', updatedNotes);
-                
-                // Update active note
-                const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
-                if (newActiveNote) {
-                    set_state('active_note', newActiveNote);
-                    // Select first entry if current was deleted
-                    if (selected_entry?.id === entryId && newActiveNote.entries && newActiveNote.entries.length > 0) {
-                        set_state('selected_entry', newActiveNote.entries[0]);
-                    } else if (newActiveNote.entries?.length === 0) {
-                        set_state('selected_entry', null);
+                if (Array.isArray(updatedNotes)) {
+                    set_state('notes', updatedNotes);
+                    
+                    // Update active note
+                    const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
+                    if (newActiveNote) {
+                        set_state('active_note', newActiveNote);
+                        // Select first entry if current was deleted
+                        if (selected_entry?.id === entryId && newActiveNote.entries && newActiveNote.entries.length > 0) {
+                            set_state('selected_entry', newActiveNote.entries[0]);
+                        } else if (newActiveNote.entries?.length === 0) {
+                            set_state('selected_entry', null);
+                        }
                     }
                 }
             }
@@ -176,38 +189,58 @@ export default React.memo((props: any) => {
     }, [active_note, selected_entry, set_state]);
 
     React.useLayoutEffect(() => {
-        window.addEventListener('all-notes-data', (ev: Event & {detail: INote[]}) => {
-            const sortedNotes = ev.detail.sort((a, b) => b.updated_at - a.updated_at);
+        const handleNotesData = (ev: Event & {detail: INote[]}) => {
+            const sortedNotes = (ev.detail || []).sort((a, b) => b.updated_at - a.updated_at);
             set_state('notes', sortedNotes);
-            
-            // If no active note, select the first one
-            if (!active_note && sortedNotes.length > 0) {
-                set_state('active_note', sortedNotes[0]);
-                if (sortedNotes[0].entries && sortedNotes[0].entries.length > 0) {
-                    set_state('selected_entry', sortedNotes[0].entries[0]);
-                }
-            } else if (active_note) {
-                // Update active note with latest data
-                const updatedActiveNote = sortedNotes.find(n => n.id === active_note.id);
-                if (updatedActiveNote) {
-                    set_state('active_note', updatedActiveNote);
-                    // Update selected entry if it exists
-                    if (selected_entry) {
-                        const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
-                        if (updatedEntry) {
-                            set_state('selected_entry', updatedEntry);
-                        }
-                    }
-                }
-            }
-        });
-    }, [active_note, selected_entry, set_state]);
+        };
+        
+        window.addEventListener('all-notes-data', handleNotesData);
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('all-notes-data', handleNotesData);
+        };
+    }, [set_state]);
 
     React.useEffect(() => {
         // Set dark mode by default
         document.documentElement.classList.add('dark');
         localStorage.setItem('dark_mode', 'dark');
+        
+        // Fetch initial notes data
+        window.electron.fetch_all_notes();
     }, []);
+    
+    // Keep active_note and selected_entry in sync with notes data
+    React.useEffect(() => {
+        if (active_note && notes.length > 0) {
+            const updatedActiveNote = notes.find(n => n.id === active_note.id);
+            if (updatedActiveNote && updatedActiveNote !== active_note) {
+                set_state('active_note', updatedActiveNote);
+                
+                // Update selected entry if it exists
+                if (selected_entry) {
+                    const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
+                    if (updatedEntry) {
+                        set_state('selected_entry', updatedEntry);
+                    } else if (updatedActiveNote.entries && updatedActiveNote.entries.length > 0) {
+                        // If selected entry no longer exists, select the first one
+                        set_state('selected_entry', updatedActiveNote.entries[0]);
+                    } else {
+                        set_state('selected_entry', null);
+                    }
+                }
+            }
+        }
+        
+        // If no active note but we have notes, select the first one
+        if (!active_note && notes.length > 0) {
+            set_state('active_note', notes[0]);
+            if (notes[0].entries && notes[0].entries.length > 0) {
+                set_state('selected_entry', notes[0].entries[0]);
+            }
+        }
+    }, [notes]);
 
     return (
         <div className='h-[100vh] w-[100%] bg-background'>

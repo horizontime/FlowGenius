@@ -17,7 +17,8 @@ export const useMainStore = create<IMainState>()(
                     break;
                 
                 case 'notes':
-                    set((state) => ({ notes: value }))
+                    // Ensure notes is always an array
+                    set((state) => ({ notes: value || [] }))
                     break;
 
                 case 'selected_entry':
@@ -31,6 +32,25 @@ export const useMainStore = create<IMainState>()(
       }),
       {
         name: 'app-main-state',
+        version: 2, // Increment version to trigger migration
+        migrate: (persistedState: any, version: number) => {
+          // Reset state if coming from old version
+          if (version === 1 || !version) {
+            return {
+              active_note: null,
+              notes: [],
+              selected_entry: null,
+              set_state: persistedState.set_state
+            };
+          }
+          
+          // Ensure notes is always an array
+          if (persistedState && !Array.isArray(persistedState.notes)) {
+            persistedState.notes = [];
+          }
+          
+          return persistedState;
+        },
       },
     ),
 )

@@ -52,9 +52,12 @@ const createWindow = (): void => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 
-  get_all_notes((data: INote[]) => {
-    console.log("all notes", data);
-    mainWindow.webContents.send('onstart-notes-data', data)
+  // Wait for the window to be ready before sending data
+  mainWindow.webContents.once('did-finish-load', () => {
+    get_all_notes((data: INote[]) => {
+      console.log("all notes", data);
+      mainWindow.webContents.send('onstart-notes-data', data || [])
+    })
   })
 
   // Note operations
