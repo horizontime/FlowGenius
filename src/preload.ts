@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from "electron";
-import { INoteData } from "./shared/types";
+import { INote, INoteEntry } from "./shared/types";
 import {broadcast_event} from './shared/events'
 
 ipcRenderer.on('onstart-notes-data', (ev, data) => {
@@ -27,26 +27,57 @@ const renderer = {
     minimizeApp: () => {
         ipcRenderer.send('minimize-app')
     },
-    set_note: async (data: any, explicit=false): Promise<INoteData[]> => {
-        const notes = await ipcRenderer.invoke('set-note', data)
-        console.log("notes", notes);
-        if (explicit) {
-            window.dispatchEvent(broadcast_event('all-notes-data', notes));
-            return;
-        }
+    
+    // Note operations
+    create_note: async (title: string): Promise<INote[]> => {
+        const notes = await ipcRenderer.invoke('create-note', title)
+        window.dispatchEvent(broadcast_event('all-notes-data', notes));
         return notes;        
+    },
+    update_note: async (note: INote): Promise<INote[]> => {
+        const notes = await ipcRenderer.invoke('update-note', note)
+        window.dispatchEvent(broadcast_event('all-notes-data', notes));
+        return notes;        
+    },
+    delete_note: async (noteId: number) => {
+        const all_notes = await ipcRenderer.invoke('delete-note', noteId)
+        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
     },
     fetch_all_notes: async () => {
         const all_notes = await ipcRenderer.invoke('fetch-all-notes')
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
     },
-    delete_note: async (note_id: string) => {
-        const all_notes = await ipcRenderer.invoke('delete-note', note_id)
+    get_note_with_entries: async (noteId: number): Promise<INote> => {
+        return await ipcRenderer.invoke('get-note-with-entries', noteId)
+    },
+    
+    // Note entry operations
+    create_note_entry: async (noteId: number, heading: string, body: string): Promise<INote> => {
+        const note = await ipcRenderer.invoke('create-note-entry', noteId, heading, body)
+        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return note;
     },
-    get_note: async (note_id: string) => {
-        return await ipcRenderer.invoke('get-note', note_id)
+    update_note_entry: async (entry: INoteEntry): Promise<INote> => {
+        const note = await ipcRenderer.invoke('update-note-entry', entry)
+        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
+        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return note;
     },
+    delete_note_entry: async (entryId: number, noteId: number): Promise<INote> => {
+        const note = await ipcRenderer.invoke('delete-note-entry', entryId, noteId)
+        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
+        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return note;
+    },
+    reorder_note_entries: async (noteId: number, entryIds: number[]): Promise<INote> => {
+        const note = await ipcRenderer.invoke('reorder-note-entries', noteId, entryIds)
+        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
+        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return note;
+    },
+    
+    // Legacy functions for backward compatibility (if needed)
     open_note_in_child_proc: (note_id: string) => {
         ipcRenderer.send('open-note-in-child-process', note_id)
     },

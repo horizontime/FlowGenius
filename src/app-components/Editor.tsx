@@ -1,60 +1,42 @@
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useMainStore } from "@/shared/zust-store";
-import { TNote } from "@/shared/types";
+import { INoteEntry } from "@/shared/types";
 
-export default React.memo((props: { selectedBlock?: number, note?: any }) => {
-    const active_note = useMainStore(state => state.active_note);
+export default React.memo((props: { entry: INoteEntry }) => {
     const set_state = useMainStore(state => state.set_state);
     const [content, setContent] = React.useState('');
 
     React.useEffect(() => {
-        if (active_note && props.selectedBlock !== undefined) {
-            try {
-                const noteData = JSON.parse(active_note.note as string) as TNote;
-                if (noteData.blocks && noteData.blocks[props.selectedBlock]) {
-                    setContent(noteData.blocks[props.selectedBlock].data?.text || '');
-                    console.log(`Loading block ${props.selectedBlock}:`, noteData.blocks[props.selectedBlock].data?.text);
-                }
-            } catch (e) {
-                console.error("Error parsing note data:", e);
-            }
+        if (props.entry) {
+            setContent(props.entry.body || '');
         }
-    }, [active_note, props.selectedBlock]);
+    }, [props.entry]);
 
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const save_content = React.useCallback(async (value: string) => {
-        if (!active_note || props.selectedBlock === undefined) return;
-        
-        console.log(`Saving block ${props.selectedBlock} with content:`, value);
+        if (!props.entry) return;
         
         try {
-            const noteData = JSON.parse(active_note.note as string) as TNote;
-            if (noteData.blocks && noteData.blocks[props.selectedBlock]) {
-                // Only update the selected block, not the first block
-                noteData.blocks[props.selectedBlock].data.text = value;
-                
-                console.log(`Updated block ${props.selectedBlock}, blocks:`, noteData.blocks.map(b => b.data.text));
-                
-                const updatedNote = {
-                    id: active_note.id,
-                    note: JSON.stringify(noteData)
-                };
-                
-                const updatedNotes = await window.electron.set_note(updatedNote);
-                // Update the state with the new notes
+            const updatedEntry = { ...props.entry, body: value };
+            const updatedNote = await window.electron.update_note_entry(updatedEntry);
+            
+            if (updatedNote) {
+                // Update the notes list
+                const updatedNotes = await window.electron.fetch_all_notes();
                 set_state('notes', updatedNotes);
-                // Update the active note to reflect the changes
-                const newActiveNote = updatedNotes.find((n: any) => n.id === active_note.id);
-                if (newActiveNote) {
-                    set_state('active_note', newActiveNote);
+                
+                // Update selected entry with the new data
+                const newEntry = updatedNote.entries?.find((e: INoteEntry) => e.id === props.entry.id);
+                if (newEntry) {
+                    set_state('selected_entry', newEntry);
                 }
             }
         } catch (e) {
-            console.error("Error saving note:", e);
+            console.error("Error saving entry:", e);
         }
-    }, [props.selectedBlock, active_note, set_state]);
+    }, [props.entry, set_state]);
 
     const handle_change = React.useCallback((value: string) => {
         setContent(value);
@@ -77,8 +59,8 @@ export default React.memo((props: { selectedBlock?: number, note?: any }) => {
         };
     }, []);
 
-    if (props.selectedBlock === undefined) {
-        return <div className="text-muted-foreground">Select a block to edit</div>;
+    if (!props.entry) {
+        return <div className="text-muted-foreground">Select an entry to edit</div>;
     }
 
     return (

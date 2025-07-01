@@ -1,14 +1,15 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { IMainState, INoteData } from './types'
+import { IMainState, INote, INoteEntry } from './types'
 // import type {} from '@redux-devtools/extension' // required for devtools typing
 
 
 export const useMainStore = create<IMainState>()(
     persist(
       (set) => ({
-        active_note: null as any,
-        notes: [] as INoteData[],
+        active_note: null as INote | null,
+        notes: [] as INote[],
+        selected_entry: null as INoteEntry | null,
         set_state: (title, value) => {
             switch (title) {
                 case 'active_note':
@@ -17,6 +18,10 @@ export const useMainStore = create<IMainState>()(
                 
                 case 'notes':
                     set((state) => ({ notes: value }))
+                    break;
+
+                case 'selected_entry':
+                    set((state) => ({ selected_entry: value }))
                     break;
 
                 default:
