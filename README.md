@@ -18,12 +18,12 @@ FlowGenius is a modern, Electron-based note-taking application designed from the
 ### AI Features
 - **✨ AI Enhancement (Available)**: Click the sparkle button on any note entry to automatically generate:
   - Brief description of the entry topic in context of the note title
-  - Three interesting facts about the topic
+  - Three facts about the topic
   - Learning guide with actionable next steps
 - **LangGraph Integration**: Powered by LangGraph prompt chaining workflow
 - **Smart Organization**: AI-powered note sorting and categorization (planned)
 - **Content Suggestions**: Intelligent recommendations for related topics and connections (planned)
-- **Auto-summarization**: Generate concise summaries of longer entries (planned)
+- **Auto-summarization**: Generate concise summaries of extended note entries (planned)
 
 ## Tech Stack
 
@@ -32,7 +32,7 @@ FlowGenius is a modern, Electron-based note-taking application designed from the
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Database**: SQLite (local storage)
 - **Build Tools**: Webpack + Electron Forge
-- **AI Integration**: LangGraph + OpenAI GPT-3.5-turbo
+- **AI Integration**: LangGraph Workflow Builder + OpenAI GPT-4o-mini
 - **Environment**: dotenv for configuration
 
 ## Installation
@@ -45,7 +45,7 @@ FlowGenius is a modern, Electron-based note-taking application designed from the
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/FlowGenius.git
+git clone https://github.com/horizontime/FlowGenius.git
 cd FlowGenius
 ```
 
