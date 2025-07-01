@@ -29,6 +29,7 @@ export default React.memo((props: any) => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [editingNoteId, setEditingNoteId] = React.useState<number | null>(null);
     const [editingEntryId, setEditingEntryId] = React.useState<number | null>(null);
+    const [editingMiddlePanelTitle, setEditingMiddlePanelTitle] = React.useState<boolean>(false);
     const [editingTitle, setEditingTitle] = React.useState('');
     const [editingHeading, setEditingHeading] = React.useState('');
 
@@ -100,6 +101,7 @@ export default React.memo((props: any) => {
             }
         }
         setEditingNoteId(null);
+        setEditingMiddlePanelTitle(false);
         setEditingTitle('');
     }, [notes, editingTitle, active_note, set_state]);
 
@@ -386,10 +388,70 @@ export default React.memo((props: any) => {
                     <div className="flex flex-col h-full">
                         <div className="p-4 border-b">
                             <div className="flex items-center justify-between">
-                                <h2 className="font-semibold">
-                                    {active_note ? active_note.title : 'Select a note'}
-                                </h2>
-                                {active_note && (
+                                {editingMiddlePanelTitle && active_note ? (
+                                    <form 
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            handle_save_note_title(active_note.id);
+                                        }}
+                                        className="flex-1 mr-3"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                value={editingTitle}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingTitle(e.target.value)}
+                                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                                    if (e.key === 'Escape') {
+                                                        setEditingMiddlePanelTitle(false);
+                                                        setEditingTitle('');
+                                                    }
+                                                }}
+                                                className="h-8"
+                                                autoFocus
+                                                onBlur={() => {
+                                                    // Small delay to allow button clicks to register
+                                                    setTimeout(() => {
+                                                        setEditingMiddlePanelTitle(false);
+                                                        setEditingTitle('');
+                                                    }, 200);
+                                                }}
+                                            />
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0"
+                                            >
+                                                <Check className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0"
+                                                onClick={() => {
+                                                    setEditingMiddlePanelTitle(false);
+                                                    setEditingTitle('');
+                                                }}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <h2 
+                                        className={`font-semibold ${active_note ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                                        onDoubleClick={() => {
+                                            if (active_note) {
+                                                setEditingMiddlePanelTitle(true);
+                                                setEditingTitle(active_note.title);
+                                            }
+                                        }}
+                                    >
+                                        {active_note ? active_note.title : 'Select a note'}
+                                    </h2>
+                                )}
+                                {active_note && !editingMiddlePanelTitle && (
                                     <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
                                         <Plus className="h-4 w-4" />
                                     </Button>
