@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { WindowButtons } from '@/assets/SharedComponents';
 import { useMainStore } from '@/shared/zust-store';
 import { INote, INoteEntry } from '@/shared/types';
-import { Plus, Search, FileText, Calendar, GripVertical, Trash2, Check, X } from 'lucide-react';
+import { Plus, Search, FileText, Calendar, GripVertical, Trash2, Check, X, Sparkles } from 'lucide-react';
 import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
 
@@ -482,6 +482,17 @@ export default React.memo((props: any) => {
                                                         {entry.body ? entry.body.replace(/\n/g, ' ').trim() : 'Empty'}
                                                     </span>
                                                 </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // TODO: Add AI functionality here
+                                                    }}
+                                                >
+                                                    <Sparkles className="h-3 w-3" />
+                                                </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
