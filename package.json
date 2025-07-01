@@ -1,8 +1,8 @@
 {
-  "name": "personal-notes",
-  "productName": "personal-notes",
+  "name": "FlowGenius",
+  "productName": "FlowGenius",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "AI / LangGraph note-taking app",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -13,6 +13,7 @@
   },
   "keywords": [],
   "license": "MIT",
+  "author": "FlowGenius Developer",
   "devDependencies": {
     "@electron-forge/cli": "^6.4.2",
     "@electron-forge/maker-deb": "^6.4.2",

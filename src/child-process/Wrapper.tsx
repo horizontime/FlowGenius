@@ -1,4 +1,4 @@
-import Editor from "@/app-components/Editor";
+import EditorJSTemplate from "@/app-components/EditorJSTemplate";
 import { INoteData } from "@/shared/types";
 import { useMainStore } from "@/shared/zust-store";
 import { X } from "lucide-react";
@@ -33,7 +33,7 @@ export default React.memo((props: any) => {
                 <div className="h-[100%] w-[100%] flex justify-center items-center">
                     <span>Loading</span>
                 </div>:
-                <Editor note={note} />  
+                <EditorJSTemplate note={note} />  
             }
         </div>
     )

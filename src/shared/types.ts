@@ -14,6 +14,12 @@ export interface INote {
     created_at: number;
     updated_at: number;
     entries?: INoteEntry[];
+    /**
+     * Optional rich-text content (EditorJS format) kept for backward-compatibility.
+     * New code should migrate to using `entries`, but older components such as
+     * `EditorJSTemplate` still read from this field, so we leave it as optional.
+     */
+    note?: string | TNote;
 }
 
 export interface INoteEntry {
