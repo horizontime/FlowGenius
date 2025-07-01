@@ -12,10 +12,6 @@
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
-  "author": {
-    "name": "Abayomi Amusa",
-    "email": "amusaabayomipaul99@gmail.com"
-  },
   "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "^6.4.2",
