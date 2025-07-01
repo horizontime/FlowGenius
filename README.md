@@ -15,11 +15,15 @@ FlowGenius is a modern, Electron-based note-taking application designed from the
 - **Content Preview**: See text previews in the entries panel for quick scanning
 - **Dark Mode**: Built-in dark theme for comfortable viewing
 
-### Planned AI Features
-- **LangGraph Integration**: Automatically research and populate note entries with relevant information
-- **Smart Organization**: AI-powered note sorting and categorization
-- **Content Suggestions**: Intelligent recommendations for related topics and connections
-- **Auto-summarization**: Generate concise summaries of longer entries
+### AI Features
+- **✨ AI Enhancement (Available)**: Click the sparkle button on any note entry to automatically generate:
+  - Brief description of the entry topic in context of the note title
+  - Three interesting facts about the topic
+  - Learning guide with actionable next steps
+- **LangGraph Integration**: Powered by LangGraph prompt chaining workflow
+- **Smart Organization**: AI-powered note sorting and categorization (planned)
+- **Content Suggestions**: Intelligent recommendations for related topics and connections (planned)
+- **Auto-summarization**: Generate concise summaries of longer entries (planned)
 
 ## Tech Stack
 
@@ -28,7 +32,8 @@ FlowGenius is a modern, Electron-based note-taking application designed from the
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Database**: SQLite (local storage)
 - **Build Tools**: Webpack + Electron Forge
-- **AI Integration**: LangGraph (planned)
+- **AI Integration**: LangGraph + OpenAI GPT-3.5-turbo
+- **Environment**: dotenv for configuration
 
 ## Installation
 
@@ -49,7 +54,13 @@ cd FlowGenius
 npm install
 ```
 
-3. Start the development server:
+3. Set up environment variables for AI features:
+```bash
+# Create a .env file in the root directory
+echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
+```
+
+4. Start the development server:
 ```bash
 npm start
 ```
@@ -66,11 +77,20 @@ This will create platform-specific installers in the `out` directory.
 
 ## Usage
 
+### Basic Features
 1. **Create a Note**: Click the + button in the left panel to create a new note
 2. **Add Entries**: Select a note and click the + button in the middle panel to add entries
 3. **Edit Content**: Click on any entry to start editing in the right panel
 4. **Search**: Use the search bar to find notes and entries quickly
 5. **Double-click to Edit**: Double-click note titles or entry headings to rename them
+
+### AI Features
+6. **✨ AI Enhancement**: 
+   - Hover over any note entry in the middle panel
+   - Click the sparkle (✨) button that appears
+   - The AI will automatically generate relevant content and append it to your entry
+   - The workflow creates: description, facts, and learning guide based on your note title and entry heading
+   - Example: For a note titled "Madagascar" with entry "Penguins", it generates info about The Penguins of Madagascar movie
 
 ## Project Structure
 
@@ -108,6 +128,8 @@ FlowGenius/
 │   │       └── ...
 │   ├── database/
 │   │   └── db.ts
+│   ├── services/                # AI workflow services
+│   │   └── ai-workflow.ts       # LangGraph prompt chaining implementation
 │   ├── shared/                  # Shared types, events, stores
 │   │   ├── types.ts
 │   │   └── zust-store.ts

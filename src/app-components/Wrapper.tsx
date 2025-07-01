@@ -32,6 +32,7 @@ export default React.memo((props: any) => {
     const [editingMiddlePanelTitle, setEditingMiddlePanelTitle] = React.useState<boolean>(false);
     const [editingTitle, setEditingTitle] = React.useState('');
     const [editingHeading, setEditingHeading] = React.useState('');
+    const [processingAI, setProcessingAI] = React.useState<number | null>(null);
 
     const filteredNotes = React.useMemo(() => {
         if (!Array.isArray(notes)) {
@@ -189,6 +190,56 @@ export default React.memo((props: any) => {
             }
         }
     }, [active_note, selected_entry, set_state]);
+
+    const handleAIEnhancement = React.useCallback(async (entry: INoteEntry) => {
+        if (!active_note || processingAI === entry.id) return;
+        
+        setProcessingAI(entry.id);
+        
+        try {
+            // Call the AI workflow with note title and entry heading
+            const aiContent = await window.electron.process_note_entry_with_ai(
+                active_note.title, 
+                entry.heading
+            );
+            
+            if (aiContent) {
+                // Append AI content to the existing body content
+                const updatedBody = entry.body ? `${entry.body}\n\n${aiContent}` : aiContent;
+                const updatedEntry = { ...entry, body: updatedBody };
+                
+                // Update the note entry
+                const updatedNote = await window.electron.update_note_entry(updatedEntry);
+                
+                if (updatedNote) {
+                    // Update the notes list
+                    const updatedNotes = await window.electron.fetch_all_notes();
+                    if (Array.isArray(updatedNotes)) {
+                        set_state('notes', updatedNotes);
+                        
+                        // Update active note
+                        const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
+                        if (newActiveNote) {
+                            set_state('active_note', newActiveNote);
+                            
+                            // Update selected entry if it's the one we just modified
+                            if (selected_entry?.id === entry.id) {
+                                const updatedSelectedEntry = newActiveNote.entries?.find((e: INoteEntry) => e.id === entry.id);
+                                if (updatedSelectedEntry) {
+                                    set_state('selected_entry', updatedSelectedEntry);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error('Error enhancing note entry with AI:', error);
+            alert('Failed to enhance note entry with AI. Please check your OpenAI API key and try again.');
+        } finally {
+            setProcessingAI(null);
+        }
+    }, [active_note, selected_entry, set_state, processingAI]);
 
     React.useLayoutEffect(() => {
         const handleNotesData = (ev: Event & {detail: INote[]}) => {
@@ -547,13 +598,14 @@ export default React.memo((props: any) => {
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-primary"
-                                                    onClick={(e) => {
+                                                    className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-primary ${processingAI === entry.id ? 'opacity-100 animate-pulse' : ''}`}
+                                                    disabled={processingAI === entry.id}
+                                                    onClick={async (e) => {
                                                         e.stopPropagation();
-                                                        // TODO: Add AI functionality here
+                                                        await handleAIEnhancement(entry);
                                                     }}
                                                 >
-                                                    <Sparkles className="h-3 w-3" />
+                                                    <Sparkles className={`h-3 w-3 ${processingAI === entry.id ? 'animate-spin' : ''}`} />
                                                 </Button>
                                                 <Button
                                                     size="sm"
