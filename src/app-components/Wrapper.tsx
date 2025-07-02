@@ -112,7 +112,7 @@ const SortableEntry = React.memo(({
                                     <Input
                                         value={editingHeading}
                                         onChange={(e) => onHeadingChange(e.target.value)}
-                                        className="h-8"
+                                        className="h-8 min-w-[100px] flex-1"
                                         autoFocus
                                         onKeyDown={(e) => {
                                             if (e.key === 'Escape') {
@@ -588,18 +588,18 @@ export default React.memo((props: any) => {
                                                             handle_save_note_title(note.id);
                                                         }}>
                                                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                                <Input
-                                                                    value={editingTitle}
-                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingTitle(e.target.value)}
-                                                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                                                        e.stopPropagation();
-                                                                        if (e.key === 'Escape') {
-                                                                            setEditingNoteId(null);
-                                                                            setEditingTitle('');
-                                                                        }
-                                                                    }}
-                                                                    className="h-7 text-sm"
-                                                                    autoFocus
+                                                                                                                <Input
+                                                    value={editingTitle}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingTitle(e.target.value)}
+                                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                                        e.stopPropagation();
+                                                        if (e.key === 'Escape') {
+                                                            setEditingNoteId(null);
+                                                            setEditingTitle('');
+                                                        }
+                                                    }}
+                                                    className="h-7 text-sm min-w-[180px] flex-1"
+                                                    autoFocus
                                                                     onBlur={() => {
                                                                         // Small delay to allow button clicks to register
                                                                         setTimeout(() => {
@@ -704,7 +704,7 @@ export default React.memo((props: any) => {
                                                         setEditingTitle('');
                                                     }
                                                 }}
-                                                className="h-8"
+                                                className="h-8 min-w-[200px] flex-1"
                                                 autoFocus
                                                 onBlur={() => {
                                                     // Small delay to allow button clicks to register
