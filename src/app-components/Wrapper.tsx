@@ -17,10 +17,175 @@ import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
 import ApiKeyModal from '../components/ApiKeyModal';
 
+// Drag and drop imports
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import {
+    CSS,
+} from '@dnd-kit/utilities';
+
 const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString();
 }
+
+// Sortable Entry Component
+const SortableEntry = React.memo(({ 
+    entry, 
+    isSelected, 
+    isEditing, 
+    editingHeading, 
+    processingAI, 
+    onSelect, 
+    onEdit, 
+    onSave, 
+    onCancel, 
+    onDelete, 
+    onAIEnhance, 
+    onHeadingChange 
+}: {
+    entry: INoteEntry;
+    isSelected: boolean;
+    isEditing: boolean;
+    editingHeading: string;
+    processingAI: number | null;
+    onSelect: () => void;
+    onEdit: () => void;
+    onSave: (e: React.FormEvent) => void;
+    onCancel: () => void;
+    onDelete: () => void;
+    onAIEnhance: () => void;
+    onHeadingChange: (value: string) => void;
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: entry.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`group p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
+                isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50'
+            } ${isDragging ? 'shadow-lg' : ''}`}
+            onClick={() => !isEditing && onSelect()}
+        >
+            <div className="flex items-start gap-2">
+                <div
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <GripVertical className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                        {isEditing ? (
+                            <form onSubmit={onSave} className="flex-1 mr-3">
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={editingHeading}
+                                        onChange={(e) => onHeadingChange(e.target.value)}
+                                        className="h-8"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Escape') {
+                                                onCancel();
+                                            }
+                                        }}
+                                    />
+                                    <Button type="submit" size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                        <Check className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0"
+                                        onClick={onCancel}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </form>
+                        ) : (
+                            <h3 
+                                className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                                onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit();
+                                }}
+                            >
+                                {entry.heading || 'Untitled'}
+                            </h3>
+                        )}
+                        {!isEditing && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-muted-foreground"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAIEnhance();
+                                    }}
+                                    disabled={processingAI === entry.id}
+                                    title="Enhance with AI"
+                                >
+                                    {processingAI === entry.id ? (
+                                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                    ) : (
+                                        <Sparkles className="h-3 w-3" />
+                                    )}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete();
+                                    }}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {entry.body ? (entry.body.length > 100 ? entry.body.substring(0, 100) + '...' : entry.body) : 'Empty'}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+});
 
 export default React.memo((props: any) => {
     const active_note = useMainStore(state => state.active_note);
@@ -37,6 +202,14 @@ export default React.memo((props: any) => {
     const [processingAI, setProcessingAI] = React.useState<number | null>(null);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = React.useState(false);
     const [hasApiKey, setHasApiKey] = React.useState(false);
+
+    // Drag and drop sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const filteredNotes = React.useMemo(() => {
         if (!Array.isArray(notes)) {
@@ -194,6 +367,28 @@ export default React.memo((props: any) => {
             }
         }
     }, [active_note, selected_entry, set_state]);
+
+    const handleDragEnd = React.useCallback(async (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (!active_note || !active_note.entries || !over || active.id === over.id) {
+            return;
+        }
+
+        const oldIndex = active_note.entries.findIndex((entry) => entry.id === active.id);
+        const newIndex = active_note.entries.findIndex((entry) => entry.id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newEntries = arrayMove(active_note.entries, oldIndex, newIndex);
+            const entryIds = newEntries.map((entry) => entry.id);
+
+            try {
+                await window.electron.reorder_note_entries(active_note.id, entryIds);
+            } catch (error) {
+                console.error("Error reordering entries:", error);
+            }
+        }
+    }, [active_note]);
 
     const handleAIEnhancement = React.useCallback(async (entry: INoteEntry) => {
         if (!active_note || processingAI === entry.id) return;
@@ -531,117 +726,54 @@ export default React.memo((props: any) => {
                         </div>
                         <ScrollArea className="flex-1">
                             <div className="p-2">
-                                {active_note?.entries?.map((entry) => {
-                                    const isSelected = selected_entry?.id === entry.id;
-                                    const isEditing = editingEntryId === entry.id;
-                                    
-                                    return (
-                                        <div
-                                            key={entry.id}
-                                            className={`group p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
-                                                isSelected ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50'
-                                            }`}
-                                            onClick={() => !isEditing && set_state('selected_entry', entry)}
+                                {active_note?.entries && active_note.entries.length > 0 ? (
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={active_note.entries.map((entry) => entry.id)}
+                                            strategy={verticalListSortingStrategy}
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
-                                                <div className="flex-1 min-w-0">
-                                                    {isEditing ? (
-                                                        <form onSubmit={(e) => {
+                                            {active_note.entries.map((entry) => {
+                                                const isSelected = selected_entry?.id === entry.id;
+                                                const isEditing = editingEntryId === entry.id;
+                                                
+                                                return (
+                                                    <SortableEntry
+                                                        key={entry.id}
+                                                        entry={entry}
+                                                        isSelected={isSelected}
+                                                        isEditing={isEditing}
+                                                        editingHeading={editingHeading}
+                                                        processingAI={processingAI}
+                                                        onSelect={() => set_state('selected_entry', entry)}
+                                                        onEdit={() => {
+                                                            setEditingEntryId(entry.id);
+                                                            setEditingHeading(entry.heading);
+                                                        }}
+                                                        onSave={(e) => {
                                                             e.preventDefault();
                                                             handle_save_entry_heading(entry.id);
-                                                        }}>
-                                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                                <Input
-                                                                    value={editingHeading}
-                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingHeading(e.target.value)}
-                                                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                                                        e.stopPropagation();
-                                                                        if (e.key === 'Escape') {
-                                                                            setEditingEntryId(null);
-                                                                            setEditingHeading('');
-                                                                        }
-                                                                    }}
-                                                                    className="h-8 text-base"
-                                                                    autoFocus
-                                                                    onBlur={() => {
-                                                                        setTimeout(() => {
-                                                                            if (editingEntryId === entry.id) {
-                                                                                setEditingEntryId(null);
-                                                                                setEditingHeading('');
-                                                                            }
-                                                                        }, 200);
-                                                                    }}
-                                                                />
-                                                                <Button
-                                                                    type="submit"
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    className="h-7 w-7 p-0"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                    }}
-                                                                >
-                                                                    <Check className="h-3 w-3" />
-                                                                </Button>
-                                                                <Button
-                                                                    type="button"
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    className="h-7 w-7 p-0"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setEditingEntryId(null);
-                                                                        setEditingHeading('');
-                                                                    }}
-                                                                >
-                                                                    <X className="h-3 w-3" />
-                                                                </Button>
-                                                            </div>
-                                                        </form>
-                                                    ) : (
-                                                        <p 
-                                                            className="text-base font-medium line-clamp-2"
-                                                            onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setEditingEntryId(entry.id);
-                                                                setEditingHeading(entry.heading);
-                                                            }}
-                                                        >
-                                                            {entry.heading || 'No heading'}
-                                                        </p>
-                                                    )}
-                                                    <span className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                                        {entry.body ? entry.body.replace(/\n/g, ' ').trim() : 'Empty'}
-                                                    </span>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-primary ${processingAI === entry.id ? 'opacity-100 animate-pulse' : ''}`}
-                                                    disabled={processingAI === entry.id}
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        await handleAIEnhancement(entry);
-                                                    }}
-                                                >
-                                                    <Sparkles className={`h-3 w-3 ${processingAI === entry.id ? 'animate-spin' : ''}`} />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handle_delete_entry(entry.id);
-                                                    }}
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                                        }}
+                                                        onCancel={() => {
+                                                            setEditingEntryId(null);
+                                                            setEditingHeading('');
+                                                        }}
+                                                        onDelete={() => handle_delete_entry(entry.id)}
+                                                        onAIEnhance={() => handleAIEnhancement(entry)}
+                                                        onHeadingChange={setEditingHeading}
+                                                    />
+                                                );
+                                            })}
+                                        </SortableContext>
+                                    </DndContext>
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-8">
+                                        No entries yet. Click the + button to add one.
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
                     </div>
