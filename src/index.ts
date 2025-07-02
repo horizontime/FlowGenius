@@ -54,9 +54,6 @@ const createWindow = (): void => {
 
   process.platform == 'darwin' && mainWindow.setWindowButtonVisibility(true);
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-
   // Wait for the window to be ready before sending data
   mainWindow.webContents.once('did-finish-load', () => {
     get_all_notes((data: INote[]) => {
