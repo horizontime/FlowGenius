@@ -571,7 +571,7 @@ export default React.memo((props: any) => {
                 {/* Left Panel - Notes List */}
                 <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
                     <div className="flex flex-col h-full bg-muted/30">
-                        <div className="p-4 border-b h-[60px] flex items-center justify-between">
+                        <div className="p-4 border-b h-[60px] flex items-center justify-between app-dragger">
                             <h2 className="font-semibold">Notes</h2>
                             <Button size="sm" variant="ghost" onClick={handle_create_new_note}>
                                 <Plus className="h-4 w-4" />
@@ -707,7 +707,7 @@ export default React.memo((props: any) => {
                 {/* Middle Panel - Note Entries */}
                 <ResizablePanel defaultSize={28.57} minSize={20} maxSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="p-4 border-b h-[60px] flex items-center">
+                        <div className="p-4 border-b h-[60px] flex items-center app-dragger">
                             <div className="flex items-center justify-between w-full">
                                 {editingMiddlePanelTitle && active_note ? (
                                     <form 
