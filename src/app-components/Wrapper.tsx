@@ -197,6 +197,7 @@ export default React.memo((props: any) => {
     const [editingNoteId, setEditingNoteId] = React.useState<number | null>(null);
     const [editingEntryId, setEditingEntryId] = React.useState<number | null>(null);
     const [editingMiddlePanelTitle, setEditingMiddlePanelTitle] = React.useState<boolean>(false);
+    const [editingRightPanelHeading, setEditingRightPanelHeading] = React.useState<boolean>(false);
     const [editingTitle, setEditingTitle] = React.useState('');
     const [editingHeading, setEditingHeading] = React.useState('');
     const [processingAI, setProcessingAI] = React.useState<number | null>(null);
@@ -332,8 +333,15 @@ export default React.memo((props: any) => {
             }
         }
         setEditingEntryId(null);
+        setEditingRightPanelHeading(false);
         setEditingHeading('');
     }, [selected_entry, editingHeading, active_note, set_state]);
+
+    const handle_save_right_panel_heading = React.useCallback(async () => {
+        if (selected_entry) {
+            await handle_save_entry_heading(selected_entry.id);
+        }
+    }, [selected_entry, handle_save_entry_heading]);
 
     const handle_add_new_entry = React.useCallback(async () => {
         if (active_note) {
@@ -839,12 +847,78 @@ export default React.memo((props: any) => {
                 {/* Right Panel - Content Editor */}
                 <ResizablePanel defaultSize={51.43} minSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between p-4 border-b app-dragger h-[60px]">
-                            <h2 className="font-semibold">
-                                {selected_entry 
-                                    ? selected_entry.heading || 'No heading'
-                                    : 'Select an entry'}
-                            </h2>
+                        {/* Thin draggable area at top */}
+                        <div className="h-2 w-full app-dragger border-b bg-muted/20"></div>
+                        
+                        {/* Main header with editable title */}
+                        <div className="flex items-center justify-between p-4 border-b h-[58px] app-dragger">
+                            {editingRightPanelHeading && selected_entry ? (
+                                <form 
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        handle_save_right_panel_heading();
+                                    }}
+                                    className="flex-1 mr-3"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            value={editingHeading}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditingHeading(e.target.value)}
+                                            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                                if (e.key === 'Escape') {
+                                                    setEditingRightPanelHeading(false);
+                                                    setEditingHeading('');
+                                                }
+                                            }}
+                                            className="h-8 min-w-[200px] flex-1"
+                                            autoFocus
+                                            onBlur={() => {
+                                                // Small delay to allow button clicks to register
+                                                setTimeout(() => {
+                                                    if (editingRightPanelHeading) {
+                                                        setEditingRightPanelHeading(false);
+                                                        setEditingHeading('');
+                                                    }
+                                                }, 200);
+                                            }}
+                                        />
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                        >
+                                            <Check className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => {
+                                                setEditingRightPanelHeading(false);
+                                                setEditingHeading('');
+                                            }}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <h2 
+                                    className={`font-semibold ${selected_entry ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                                    onDoubleClick={() => {
+                                        if (selected_entry) {
+                                            setEditingRightPanelHeading(true);
+                                            setEditingHeading(selected_entry.heading || '');
+                                        }
+                                    }}
+                                >
+                                    {selected_entry 
+                                        ? selected_entry.heading || 'No heading'
+                                        : 'Select an entry'}
+                                </h2>
+                            )}
                             <div className="flex items-center gap-2">
                                 <Button 
                                     size="sm" 
