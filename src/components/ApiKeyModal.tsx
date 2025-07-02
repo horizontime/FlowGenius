@@ -49,7 +49,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onOpenChange }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-w-[90vw] w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
@@ -60,23 +60,25 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onOpenChange }) => {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 min-w-0">
           {currentApiKey && (
-            <div className="p-3 bg-muted rounded-lg">
+            <div className="p-3 bg-muted rounded-lg min-w-0">
               <p className="text-sm text-muted-foreground mb-1">Current API Key:</p>
-              <p className="font-mono text-sm">{maskedApiKey}</p>
+              <p className="font-mono text-sm break-all">{maskedApiKey}</p>
             </div>
           )}
           
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="text-sm font-medium">API Key:</label>
-            <Input
-              type="password"
-              placeholder="sk-..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="font-mono"
-            />
+            <div className="min-w-0">
+              <Input
+                type="password"
+                placeholder="sk-..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="font-mono w-full min-w-0"
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
               Get your API key from{' '}
               <a 
@@ -91,17 +93,18 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onOpenChange }) => {
           </div>
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-2 flex-wrap">
           <Button
             variant="outline"
             onClick={handleClear}
             disabled={!currentApiKey}
+            className="flex-shrink-0"
           >
             <X className="h-4 w-4 mr-2" />
             Clear
           </Button>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
