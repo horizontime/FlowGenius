@@ -57,7 +57,6 @@ const createWindow = (): void => {
   // Wait for the window to be ready before sending data
   mainWindow.webContents.once('did-finish-load', () => {
     get_all_notes((data: INote[]) => {
-      console.log("all notes", data);
       mainWindow.webContents.send('onstart-notes-data', data || [])
     })
   })
@@ -66,7 +65,6 @@ const createWindow = (): void => {
   ipcMain.handle('create-note', async (ev, title: string) => {
     return await new Promise((res, rej) => {
       create_note(title, (data: INote[]) => {
-        console.log("created note", data);
         res(data)
       })
     })
@@ -75,7 +73,6 @@ const createWindow = (): void => {
   ipcMain.handle('update-note', async (ev, note: INote) => {
     return await new Promise((res, rej) => {
       update_note(note, (data: INote[]) => {
-        console.log("updated note", data);
         res(data)
       })
     })
@@ -84,7 +81,6 @@ const createWindow = (): void => {
   ipcMain.handle('delete-note', async (ev, noteId: number) => {
     return await new Promise((res, rej) => {
       delete_note(noteId, (data: INote[]) => {
-        console.log("deleted note", data);
         res(data)
       })
     })
@@ -93,7 +89,6 @@ const createWindow = (): void => {
   ipcMain.handle('fetch-all-notes', async (ev, argz) => {
     return await new Promise((res, rej) => {
       get_all_notes((data: INote[]) => {
-        console.log("all notes", data);
         res(data)
       })
     })
@@ -102,7 +97,6 @@ const createWindow = (): void => {
   ipcMain.handle('get-note-with-entries', async (ev, noteId: number) => {
     return await new Promise((res, rej) => {
       get_note_with_entries(noteId, (data: INote) => {
-        console.log("got note with entries", data);
         res(data)
       })
     })
@@ -112,7 +106,6 @@ const createWindow = (): void => {
   ipcMain.handle('create-note-entry', async (ev, noteId: number, heading: string, body: string) => {
     return await new Promise((res, rej) => {
       create_note_entry(noteId, heading, body, (data: INote) => {
-        console.log("created note entry", data);
         res(data)
       })
     })
@@ -121,7 +114,6 @@ const createWindow = (): void => {
   ipcMain.handle('update-note-entry', async (ev, entry: INoteEntry) => {
     return await new Promise((res, rej) => {
       update_note_entry(entry, (data: INote) => {
-        console.log("updated note entry", data);
         res(data)
       })
     })
@@ -130,7 +122,6 @@ const createWindow = (): void => {
   ipcMain.handle('delete-note-entry', async (ev, entryId: number, noteId: number) => {
     return await new Promise((res, rej) => {
       delete_note_entry(entryId, noteId, (data: INote) => {
-        console.log("deleted note entry", data);
         res(data)
       })
     })
@@ -139,7 +130,6 @@ const createWindow = (): void => {
   ipcMain.handle('reorder-note-entries', async (ev, noteId: number, entryIds: number[]) => {
     return await new Promise((res, rej) => {
       reorder_note_entries(noteId, entryIds, (data: INote) => {
-        console.log("reordered note entries", data);
         res(data)
       })
     })
@@ -149,7 +139,6 @@ const createWindow = (): void => {
   ipcMain.handle('process-note-entry-with-ai', async (ev, noteTitle: string, entryHeading: string, apiKey?: string) => {
     try {
       const result = await processNoteEntryWithAI(noteTitle, entryHeading, apiKey);
-      console.log("AI workflow result", result);
       return result;
     } catch (error) {
       console.error("Error in AI workflow:", error);
@@ -285,8 +274,6 @@ const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 
 ipcMain.on('open-note-in-child-process', (ev, noteId: number) => {
-  console.log("opening note in child process", noteId);
-  
   const childWindow = new BrowserWindow({
     height: 450,
     width: 450,
@@ -303,15 +290,12 @@ ipcMain.on('open_note_item_context_menu', (ev, noteId: number) => {
     {
       label: 'Open in a new window',
       click: () => { 
-        console.log("note id", noteId);
-        
         ipcMain.emit('open-note-in-child-process', noteId)
       }
     },
     { type: 'separator' },
     { label: 'Delete', click: () => {
       delete_note(noteId, (data: INote[]) => {
-        console.log("all notes", data);
         ev.sender.send('update-notes-data', data)
       })
     } }
