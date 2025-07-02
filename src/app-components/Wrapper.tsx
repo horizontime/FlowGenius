@@ -907,6 +907,7 @@ export default React.memo((props: any) => {
                             ) : (
                                 <h2 
                                     className={`font-semibold ${selected_entry ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                                     onDoubleClick={() => {
                                         if (selected_entry) {
                                             setEditingRightPanelHeading(true);
