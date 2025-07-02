@@ -50,3 +50,15 @@ export const sectionize_notes = (notes: INoteData[]) => {
 
     return sections
 }
+
+export const hasOpenAIApiKey = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const storedKey = localStorage.getItem('openai_api_key');
+    return !!(storedKey && storedKey.trim().length > 0);
+  }
+  return !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 0);
+};
+
+export const getOpenAIApiKeyStatus = (): 'configured' | 'missing' => {
+  return hasOpenAIApiKey() ? 'configured' : 'missing';
+};

@@ -78,8 +78,8 @@ const renderer = {
     },
     
     // AI workflow operations
-    process_note_entry_with_ai: async (noteTitle: string, entryHeading: string): Promise<string | null> => {
-        return await ipcRenderer.invoke('process-note-entry-with-ai', noteTitle, entryHeading);
+    process_note_entry_with_ai: async (noteTitle: string, entryHeading: string, apiKey?: string): Promise<string | null> => {
+        return await ipcRenderer.invoke('process-note-entry-with-ai', noteTitle, entryHeading, apiKey);
     },
     
     // Legacy functions for backward compatibility (if needed)

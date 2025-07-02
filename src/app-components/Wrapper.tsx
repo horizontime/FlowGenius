@@ -11,9 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { WindowButtons } from '@/assets/SharedComponents';
 import { useMainStore } from '@/shared/zust-store';
 import { INote, INoteEntry } from '@/shared/types';
-import { Plus, Search, FileText, Calendar, GripVertical, Trash2, Check, X, Sparkles } from 'lucide-react';
+import { hasOpenAIApiKey } from '@/shared/functions';
+import { Plus, Search, FileText, Calendar, GripVertical, Trash2, Check, X, Sparkles, Key } from 'lucide-react';
 import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
+import ApiKeyModal from '../components/ApiKeyModal';
 
 const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -33,6 +35,8 @@ export default React.memo((props: any) => {
     const [editingTitle, setEditingTitle] = React.useState('');
     const [editingHeading, setEditingHeading] = React.useState('');
     const [processingAI, setProcessingAI] = React.useState<number | null>(null);
+    const [isApiKeyModalOpen, setIsApiKeyModalOpen] = React.useState(false);
+    const [hasApiKey, setHasApiKey] = React.useState(false);
 
     const filteredNotes = React.useMemo(() => {
         if (!Array.isArray(notes)) {
@@ -194,13 +198,21 @@ export default React.memo((props: any) => {
     const handleAIEnhancement = React.useCallback(async (entry: INoteEntry) => {
         if (!active_note || processingAI === entry.id) return;
         
+        // Get the API key from localStorage
+        const apiKey = localStorage.getItem('openai_api_key');
+        if (!apiKey) {
+            alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
+            return;
+        }
+        
         setProcessingAI(entry.id);
         
         try {
-            // Call the AI workflow with note title and entry heading
+            // Call the AI workflow with note title, entry heading, and API key
             const aiContent = await window.electron.process_note_entry_with_ai(
                 active_note.title, 
-                entry.heading
+                entry.heading,
+                apiKey
             );
             
             if (aiContent) {
@@ -255,6 +267,11 @@ export default React.memo((props: any) => {
         };
     }, [set_state]);
 
+    // Check API key status
+    React.useEffect(() => {
+        setHasApiKey(hasOpenAIApiKey());
+    }, [isApiKeyModalOpen]);
+
     React.useEffect(() => {
         // Set dark mode by default
         document.documentElement.classList.add('dark');
@@ -262,6 +279,9 @@ export default React.memo((props: any) => {
         
         // Fetch initial notes data
         window.electron.fetch_all_notes();
+        
+        // Check initial API key status
+        setHasApiKey(hasOpenAIApiKey());
     }, []);
     
     // Keep active_note and selected_entry in sync with notes data
@@ -638,7 +658,18 @@ export default React.memo((props: any) => {
                                     ? selected_entry.heading || 'No heading'
                                     : 'Select an entry'}
                             </h2>
-                            <WindowButtons />
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => setIsApiKeyModalOpen(true)}
+                                    className={`h-8 w-8 p-0 ${hasApiKey ? 'text-green-600 hover:text-green-700' : 'text-amber-600 hover:text-amber-700'}`}
+                                    title={hasApiKey ? "OpenAI API Key Configured" : "Configure OpenAI API Key"}
+                                >
+                                    <Key className="h-4 w-4" />
+                                </Button>
+                                <WindowButtons />
+                            </div>
                         </div>
                         <div className="flex-1 p-4">
                             {active_note && selected_entry ? (
@@ -650,6 +681,11 @@ export default React.memo((props: any) => {
                     </div>
                 </ResizablePanel>
             </ResizablePanelGroup>
+            
+            <ApiKeyModal 
+                isOpen={isApiKeyModalOpen} 
+                onOpenChange={setIsApiKeyModalOpen} 
+            />
         </div>
     );
 });

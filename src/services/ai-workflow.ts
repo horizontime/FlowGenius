@@ -2,17 +2,36 @@
 import { StateGraph, Annotation } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 
+// Function to get API key from parameter or environment
+function getOpenAIApiKey(providedApiKey?: string): string {
+  // First try the provided API key
+  if (providedApiKey && providedApiKey.trim()) {
+    return providedApiKey.trim();
+  }
+  
+  // Fallback to environment variable
+  return process.env.OPENAI_API_KEY || '';
+}
+
 // Initialize OpenAI LLM
-const llm = new ChatOpenAI({
-  modelName: "gpt-4o-mini",
-  temperature: 0.7,
-  openAIApiKey: process.env.OPENAI_API_KEY,
-});
+function createLLM(apiKey?: string) {
+  const finalApiKey = getOpenAIApiKey(apiKey);
+  if (!finalApiKey) {
+    throw new Error('No OpenAI API key found. Please set up your API key in the settings.');
+  }
+  
+  return new ChatOpenAI({
+    modelName: "gpt-4o-mini",
+    temperature: 0.7,
+    openAIApiKey: finalApiKey,
+  });
+}
 
 // Graph state
 const StateAnnotation = Annotation.Root({
   noteTitle: Annotation,
   entryHeading: Annotation,
+  apiKey: Annotation,
   initialResponse: Annotation,
   facts: Annotation,
   learningGuide: Annotation,
@@ -23,6 +42,7 @@ const StateAnnotation = Annotation.Root({
 async function analyzeSubheading(state: typeof StateAnnotation.State) {
   const prompt = `Given the note title "${state.noteTitle}" and the entry subheading "${state.entryHeading}", provide a brief description of what "${state.entryHeading}" means in the context of "${state.noteTitle}". Keep the response to a maximum of 300 characters.`;
   
+  const llm = createLLM(state.apiKey);
   const msg = await llm.invoke(prompt);
   return { initialResponse: msg.content as string };
 }
@@ -77,6 +97,7 @@ function validateResponse(state: typeof StateAnnotation.State) {
 async function generateFacts(state: typeof StateAnnotation.State) {
   const prompt = `Based on the note title "${state.noteTitle}" and the subheading "${state.entryHeading}", provide exactly three interesting facts about "${state.entryHeading}" in relation to "${state.noteTitle}". Format each fact as a bullet point starting with "•".`;
   
+  const llm = createLLM(state.apiKey);
   const msg = await llm.invoke(prompt);
   return { facts: msg.content as string };
 }
@@ -85,6 +106,7 @@ async function generateFacts(state: typeof StateAnnotation.State) {
 async function generateLearningGuide(state: typeof StateAnnotation.State) {
   const prompt = `Write a concise paragraph (400 characters or less) about how to get started learning about "${state.entryHeading}" in the context of "${state.noteTitle}". Make it practical and actionable.`;
   
+  const llm = createLLM(state.apiKey);
   const msg = await llm.invoke(prompt);
   return { learningGuide: msg.content as string };
 }
@@ -112,11 +134,12 @@ const aiWorkflow = new StateGraph(StateAnnotation)
   .compile();
 
 // Export the main function to process note entry
-export async function processNoteEntryWithAI(noteTitle: string, entryHeading: string): Promise<string | null> {
+export async function processNoteEntryWithAI(noteTitle: string, entryHeading: string, apiKey?: string): Promise<string | null> {
   try {
     const result = await aiWorkflow.invoke({ 
       noteTitle, 
-      entryHeading 
+      entryHeading,
+      apiKey
     });
     
     const finalResult = result.finalResult as string;

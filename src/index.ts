@@ -149,9 +149,9 @@ const createWindow = (): void => {
   })
 
   // AI workflow operations
-  ipcMain.handle('process-note-entry-with-ai', async (ev, noteTitle: string, entryHeading: string) => {
+  ipcMain.handle('process-note-entry-with-ai', async (ev, noteTitle: string, entryHeading: string, apiKey?: string) => {
     try {
-      const result = await processNoteEntryWithAI(noteTitle, entryHeading);
+      const result = await processNoteEntryWithAI(noteTitle, entryHeading, apiKey);
       console.log("AI workflow result", result);
       return result;
     } catch (error) {
