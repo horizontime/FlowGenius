@@ -684,7 +684,7 @@ export default React.memo((props: any) => {
                 {/* Middle Panel - Note Entries */}
                 <ResizablePanel defaultSize={28.57} minSize={20} maxSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="p-4 border-b h-[88px] flex items-center">
+                        <div className="p-4 border-b h-[60px] flex items-center">
                             <div className="flex items-center justify-between w-full">
                                 {editingMiddlePanelTitle && active_note ? (
                                     <form 
@@ -816,7 +816,7 @@ export default React.memo((props: any) => {
                 {/* Right Panel - Content Editor */}
                 <ResizablePanel defaultSize={51.43} minSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between p-4 border-b app-dragger h-[88px]">
+                        <div className="flex items-center justify-between p-4 border-b app-dragger h-[60px]">
                             <h2 className="font-semibold">
                                 {selected_entry 
                                     ? selected_entry.heading || 'No heading'

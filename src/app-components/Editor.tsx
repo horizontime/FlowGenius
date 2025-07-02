@@ -58,7 +58,7 @@ export default React.memo((props: { entry: INoteEntry }) => {
         <Textarea
             value={content}
             onChange={(e) => handle_change(e.target.value)}
-            className="w-full h-full min-h-[calc(100vh-120px)] resize-none border-none shadow-none focus-visible:ring-0 text-base leading-relaxed"
+            className="w-full h-full min-h-[calc(100vh-92px)] resize-none border-none shadow-none focus-visible:ring-0 text-base leading-relaxed"
             placeholder="Start writing..."
             autoFocus
         />
