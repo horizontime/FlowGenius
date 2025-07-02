@@ -548,13 +548,13 @@ export default React.memo((props: any) => {
                 {/* Left Panel - Notes List */}
                 <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
                     <div className="flex flex-col h-full bg-muted/30">
-                        <div className="p-4 border-b h-[88px] flex flex-col justify-between">
-                            <div className="flex items-center gap-2">
-                                <h2 className="font-semibold">Notes</h2>
-                                <Button size="sm" variant="ghost" onClick={handle_create_new_note}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                            </div>
+                        <div className="p-4 border-b h-[60px] flex items-center justify-between">
+                            <h2 className="font-semibold">Notes</h2>
+                            <Button size="sm" variant="ghost" onClick={handle_create_new_note}>
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="pt-4 pb-2 px-4">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
