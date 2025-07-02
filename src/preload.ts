@@ -39,9 +39,10 @@ const renderer = {
         window.dispatchEvent(broadcast_event('all-notes-data', notes));
         return notes;        
     },
-    delete_note: async (noteId: number) => {
+    delete_note: async (noteId: number): Promise<INote[]> => {
         const all_notes = await ipcRenderer.invoke('delete-note', noteId)
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return all_notes;
     },
     fetch_all_notes: async () => {
         const all_notes = await ipcRenderer.invoke('fetch-all-notes')
@@ -54,14 +55,21 @@ const renderer = {
     // Note entry operations
     create_note_entry: async (noteId: number, heading: string, body: string): Promise<INote> => {
         const note = await ipcRenderer.invoke('create-note-entry', noteId, heading, body)
+        // The main process already calls get_all_notes in the callback, so we need to fetch fresh data
         const all_notes = await ipcRenderer.invoke('fetch-all-notes')
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
         return note;
     },
     update_note_entry: async (entry: INoteEntry): Promise<INote> => {
         const note = await ipcRenderer.invoke('update-note-entry', entry)
-        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
-        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        // Only fetch all notes if the update was successful, and do it in the background
+        if (note) {
+            // Use setTimeout to make this async and non-blocking
+            setTimeout(async () => {
+                const all_notes = await ipcRenderer.invoke('fetch-all-notes')
+                window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+            }, 0);
+        }
         return note;
     },
     delete_note_entry: async (entryId: number, noteId: number): Promise<INote> => {

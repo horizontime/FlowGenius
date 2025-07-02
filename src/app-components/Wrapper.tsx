@@ -255,11 +255,29 @@ export default React.memo((props: any) => {
         }
     }, [set_state]);
 
-    const handle_delete_note = React.useCallback(() => {
+    const handle_delete_note = React.useCallback(async () => {
         if (active_note && confirm("Are you sure you want to delete this note?")) {
-            window.electron.delete_note(active_note.id);
+            const deletedNoteId = active_note.id;
+            const updatedNotes = await window.electron.delete_note(deletedNoteId);
+            
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+                
+                // Clear the active note and selected entry since the note was deleted
+                set_state('active_note', null);
+                set_state('selected_entry', null);
+                
+                // If there are remaining notes, select the first one
+                if (updatedNotes.length > 0) {
+                    const firstNote = updatedNotes[0];
+                    set_state('active_note', firstNote);
+                    if (firstNote.entries && firstNote.entries.length > 0) {
+                        set_state('selected_entry', firstNote.entries[0]);
+                    }
+                }
+            }
         }
-    }, [active_note]);
+    }, [active_note, set_state]);
 
     const handle_save_note_title = React.useCallback(async (noteId: number) => {
         const note = notes.find(n => n.id === noteId);
@@ -483,21 +501,35 @@ export default React.memo((props: any) => {
     React.useEffect(() => {
         if (active_note && notes.length > 0) {
             const updatedActiveNote = notes.find(n => n.id === active_note.id);
-            if (updatedActiveNote && updatedActiveNote !== active_note) {
-                set_state('active_note', updatedActiveNote);
+            if (updatedActiveNote) {
+                // Only update if there are actual changes (check by timestamp or content)
+                const hasChanges = 
+                    updatedActiveNote.updated_at !== active_note.updated_at ||
+                    updatedActiveNote.entries?.length !== active_note.entries?.length;
                 
-                // Update selected entry if it exists
-                if (selected_entry) {
-                    const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
-                    if (updatedEntry) {
-                        set_state('selected_entry', updatedEntry);
-                    } else if (updatedActiveNote.entries && updatedActiveNote.entries.length > 0) {
-                        // If selected entry no longer exists, select the first one
-                        set_state('selected_entry', updatedActiveNote.entries[0]);
-                    } else {
-                        set_state('selected_entry', null);
+                if (hasChanges) {
+                    set_state('active_note', updatedActiveNote);
+                    
+                    // Update selected entry if it exists
+                    if (selected_entry) {
+                        const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
+                        if (updatedEntry) {
+                            // Only update if the entry content has changed
+                            if (updatedEntry.body !== selected_entry.body || updatedEntry.heading !== selected_entry.heading || updatedEntry.updated_at !== selected_entry.updated_at) {
+                                set_state('selected_entry', updatedEntry);
+                            }
+                        } else if (updatedActiveNote.entries && updatedActiveNote.entries.length > 0) {
+                            // If selected entry no longer exists, select the first one
+                            set_state('selected_entry', updatedActiveNote.entries[0]);
+                        } else {
+                            set_state('selected_entry', null);
+                        }
                     }
                 }
+            } else {
+                // Active note no longer exists, clear it
+                set_state('active_note', null);
+                set_state('selected_entry', null);
             }
         }
         
@@ -508,7 +540,7 @@ export default React.memo((props: any) => {
                 set_state('selected_entry', notes[0].entries[0]);
             }
         }
-    }, [notes]);
+    }, [notes, active_note, selected_entry, set_state]);
 
     return (
         <div className='h-[100vh] w-[100%] bg-background'>
