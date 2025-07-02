@@ -217,8 +217,13 @@ export default React.memo((props: any) => {
             return [];
         }
         
+        // If no search query, return already sorted notes (they come pre-sorted from database)
+        if (!searchQuery.trim()) {
+            return notes;
+        }
+        
+        const searchLower = searchQuery.toLowerCase();
         return notes.filter(note => {
-            const searchLower = searchQuery.toLowerCase();
             // Search in note title
             if (note.title.toLowerCase().includes(searchLower)) return true;
             // Search in note entries
@@ -226,7 +231,7 @@ export default React.memo((props: any) => {
                 entry.heading.toLowerCase().includes(searchLower) ||
                 entry.body?.toLowerCase().includes(searchLower)
             ) ?? false;
-        }).sort((a, b) => b.updated_at - a.updated_at);
+        });
     }, [notes, searchQuery]);
 
     const handle_create_new_note = React.useCallback(async () => {
@@ -307,22 +312,23 @@ export default React.memo((props: any) => {
             const updatedNote = await window.electron.update_note_entry(updatedEntry);
             
             if (updatedNote && active_note) {
-                // Update the notes list
-                const updatedNotes = await window.electron.fetch_all_notes();
-                if (Array.isArray(updatedNotes)) {
-                    set_state('notes', updatedNotes);
-                    
-                    // Update active note
-                    const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
-                    if (newActiveNote) {
-                        set_state('active_note', newActiveNote);
-                        // Update selected entry
-                        const newSelectedEntry = newActiveNote.entries?.find((e: INoteEntry) => e.id === entryId);
-                        if (newSelectedEntry) {
-                            set_state('selected_entry', newSelectedEntry);
-                        }
-                    }
-                }
+                // Optimistically update the local state first for immediate UI feedback
+                const updatedSelectedEntry = { ...selected_entry, heading: editingHeading };
+                set_state('selected_entry', updatedSelectedEntry);
+                
+                // Update the active note's entries
+                const updatedActiveNote = {
+                    ...active_note,
+                    entries: active_note.entries?.map(e => 
+                        e.id === entryId ? updatedSelectedEntry : e
+                    )
+                };
+                set_state('active_note', updatedActiveNote);
+                
+                // Fetch full notes list in background (debounced)
+                setTimeout(() => {
+                    window.electron.fetch_all_notes();
+                }, 500);
             }
         }
         setEditingEntryId(null);
@@ -467,15 +473,27 @@ export default React.memo((props: any) => {
     }, [active_note, selected_entry, set_state, processingAI]);
 
     React.useLayoutEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+        
         const handleNotesData = (ev: Event & {detail: INote[]}) => {
-            const sortedNotes = (ev.detail || []).sort((a, b) => b.updated_at - a.updated_at);
-            set_state('notes', sortedNotes);
+            // Debounce rapid notes updates
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            timeoutId = setTimeout(() => {
+                // Notes should already be sorted from database, but ensure consistency
+                const notesData = ev.detail || [];
+                const sortedNotes = notesData.length > 1 ? 
+                    notesData.sort((a, b) => b.created_at - a.created_at) : 
+                    notesData;
+                set_state('notes', sortedNotes);
+            }, 100);
         };
         
         window.addEventListener('all-notes-data', handleNotesData);
         
         // Cleanup
         return () => {
+            if (timeoutId) clearTimeout(timeoutId);
             window.removeEventListener('all-notes-data', handleNotesData);
         };
     }, [set_state]);
@@ -499,47 +517,52 @@ export default React.memo((props: any) => {
     
     // Keep active_note and selected_entry in sync with notes data
     React.useEffect(() => {
-        if (active_note && notes.length > 0) {
-            const updatedActiveNote = notes.find(n => n.id === active_note.id);
-            if (updatedActiveNote) {
-                // Only update if there are actual changes (check by timestamp or content)
-                const hasChanges = 
-                    updatedActiveNote.updated_at !== active_note.updated_at ||
-                    updatedActiveNote.entries?.length !== active_note.entries?.length;
-                
-                if (hasChanges) {
-                    set_state('active_note', updatedActiveNote);
+        // Debounce this effect to prevent excessive updates
+        const timeoutId = setTimeout(() => {
+            if (active_note && notes.length > 0) {
+                const updatedActiveNote = notes.find(n => n.id === active_note.id);
+                if (updatedActiveNote) {
+                    // Only update if there are actual changes (check by timestamp or content)
+                    const hasChanges = 
+                        updatedActiveNote.updated_at !== active_note.updated_at ||
+                        updatedActiveNote.entries?.length !== active_note.entries?.length;
                     
-                    // Update selected entry if it exists
-                    if (selected_entry) {
-                        const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
-                        if (updatedEntry) {
-                            // Only update if the entry content has changed
-                            if (updatedEntry.body !== selected_entry.body || updatedEntry.heading !== selected_entry.heading || updatedEntry.updated_at !== selected_entry.updated_at) {
-                                set_state('selected_entry', updatedEntry);
+                    if (hasChanges) {
+                        set_state('active_note', updatedActiveNote);
+                        
+                        // Update selected entry if it exists
+                        if (selected_entry) {
+                            const updatedEntry = updatedActiveNote.entries?.find((e: INoteEntry) => e.id === selected_entry.id);
+                            if (updatedEntry) {
+                                // Only update if the entry content has changed
+                                if (updatedEntry.body !== selected_entry.body || updatedEntry.heading !== selected_entry.heading || updatedEntry.updated_at !== selected_entry.updated_at) {
+                                    set_state('selected_entry', updatedEntry);
+                                }
+                            } else if (updatedActiveNote.entries && updatedActiveNote.entries.length > 0) {
+                                // If selected entry no longer exists, select the first one
+                                set_state('selected_entry', updatedActiveNote.entries[0]);
+                            } else {
+                                set_state('selected_entry', null);
                             }
-                        } else if (updatedActiveNote.entries && updatedActiveNote.entries.length > 0) {
-                            // If selected entry no longer exists, select the first one
-                            set_state('selected_entry', updatedActiveNote.entries[0]);
-                        } else {
-                            set_state('selected_entry', null);
                         }
                     }
+                } else {
+                    // Active note no longer exists, clear it
+                    set_state('active_note', null);
+                    set_state('selected_entry', null);
                 }
-            } else {
-                // Active note no longer exists, clear it
-                set_state('active_note', null);
-                set_state('selected_entry', null);
             }
-        }
-        
-        // If no active note but we have notes, select the first one
-        if (!active_note && notes.length > 0) {
-            set_state('active_note', notes[0]);
-            if (notes[0].entries && notes[0].entries.length > 0) {
-                set_state('selected_entry', notes[0].entries[0]);
+            
+            // If no active note but we have notes, select the first one
+            if (!active_note && notes.length > 0) {
+                set_state('active_note', notes[0]);
+                if (notes[0].entries && notes[0].entries.length > 0) {
+                    set_state('selected_entry', notes[0].entries[0]);
+                }
             }
-        }
+        }, 50); // Small delay to debounce rapid updates
+
+        return () => clearTimeout(timeoutId);
     }, [notes, active_note, selected_entry, set_state]);
 
     return (

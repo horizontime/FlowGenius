@@ -110,7 +110,7 @@ export const delete_note = (noteId: number, callback: Function) => {
 export const get_all_notes = (callback: Function) => {
     db.serialize(() => {
         db.all(
-            "SELECT * FROM notes ORDER BY updated_at DESC",
+            "SELECT * FROM notes ORDER BY created_at DESC",
             (err, notes: INote[]) => {
                 if (err) {
                     console.error("Error getting notes:", err);

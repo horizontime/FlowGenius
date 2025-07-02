@@ -32,14 +32,21 @@ export default React.memo((props: { entry: INoteEntry }) => {
     const handle_change = React.useCallback((value: string) => {
         setContent(value);
         
-        // Debounced save with longer delay to reduce database calls
+        // Debounced save with optimized delay
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
         
         saveTimeoutRef.current = setTimeout(() => {
-            save_content(value);
-        }, 1000); // Increased from 500ms to 1000ms
+            // Use requestIdleCallback if available for non-blocking saves
+            if (window.requestIdleCallback) {
+                window.requestIdleCallback(() => {
+                    save_content(value);
+                });
+            } else {
+                save_content(value);
+            }
+        }, 750); // Balanced delay
     }, [save_content]);
 
     React.useEffect(() => {
