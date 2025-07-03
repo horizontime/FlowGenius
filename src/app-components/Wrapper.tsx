@@ -854,7 +854,7 @@ export default React.memo((props: any) => {
                                                             {formatDate(note.created_at)}
                                                         </span>
                                                         <Badge variant="secondary" className="text-xs">
-                                                            {note.entries?.length || 0}
+                                                            {note.entries?.length || 0} {(note.entries?.length || 0) === 1 ? 'item' : 'items'}
                                                         </Badge>
                                                     </div>
                                                     <TagsDisplay tags={note.tags || []} className="mt-2" />
