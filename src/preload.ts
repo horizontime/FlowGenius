@@ -89,6 +89,11 @@ const renderer = {
     process_note_entry_with_ai: async (noteTitle: string, entryHeading: string, apiKey?: string): Promise<string | null> => {
         return await ipcRenderer.invoke('process-note-entry-with-ai', noteTitle, entryHeading, apiKey);
     },
+
+    // AI summarization operations
+    summarize_note: async (noteId: number, summary: string): Promise<INote[]> => {
+        return await ipcRenderer.invoke('summarize-note', noteId, summary);
+    },
     
     // Legacy functions for backward compatibility (if needed)
     open_note_in_child_proc: (note_id: string) => {

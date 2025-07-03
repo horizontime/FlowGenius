@@ -16,6 +16,8 @@ import { Plus, Search, FileText, Calendar, GripVertical, Trash2, Check, X, Spark
 import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
 import ApiKeyModal from '../components/ApiKeyModal';
+import SummaryModal from '../components/SummaryModal';
+import { summarizeNote } from '../services/ai-summarize';
 
 // Drag and drop imports
 import {
@@ -203,6 +205,9 @@ export default React.memo((props: any) => {
     const [processingAI, setProcessingAI] = React.useState<number | null>(null);
     const [isApiKeyModalOpen, setIsApiKeyModalOpen] = React.useState(false);
     const [hasApiKey, setHasApiKey] = React.useState(false);
+    const [isSummaryModalOpen, setIsSummaryModalOpen] = React.useState(false);
+    const [summarizing, setSummarizing] = React.useState(false);
+    const [noteSummary, setNoteSummary] = React.useState('');
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -445,31 +450,35 @@ export default React.memo((props: any) => {
             if (aiContent) {
                 // Append AI content to the existing body content
                 const updatedBody = entry.body ? `${entry.body}\n\n${aiContent}` : aiContent;
-                const updatedEntry = { ...entry, body: updatedBody };
+                const updatedEntry = { ...entry, body: updatedBody, updated_at: Date.now() };
                 
-                // Update the note entry
+                // Immediately update selected entry if it's the one being modified
+                if (selected_entry?.id === entry.id) {
+                    set_state('selected_entry', updatedEntry);
+                }
+                
+                // Update the note entry in database
                 const updatedNote = await window.electron.update_note_entry(updatedEntry);
                 
                 if (updatedNote) {
-                    // Update the notes list
-                    const updatedNotes = await window.electron.fetch_all_notes();
-                    if (Array.isArray(updatedNotes)) {
-                        set_state('notes', updatedNotes);
-                        
-                        // Update active note
-                        const newActiveNote = updatedNotes.find((n: INote) => n.id === active_note.id);
-                        if (newActiveNote) {
-                            set_state('active_note', newActiveNote);
-                            
-                            // Update selected entry if it's the one we just modified
-                            if (selected_entry?.id === entry.id) {
-                                const updatedSelectedEntry = newActiveNote.entries?.find((e: INoteEntry) => e.id === entry.id);
-                                if (updatedSelectedEntry) {
-                                    set_state('selected_entry', updatedSelectedEntry);
-                                }
-                            }
-                        }
+                    // Update active note with the latest entries
+                    if (active_note) {
+                        const updatedActiveNote = {
+                            ...active_note,
+                            entries: active_note.entries?.map(e => 
+                                e.id === entry.id ? updatedEntry : e
+                            )
+                        };
+                        set_state('active_note', updatedActiveNote);
                     }
+                    
+                    // Refresh the full notes list in the background
+                    setTimeout(async () => {
+                        const updatedNotes = await window.electron.fetch_all_notes();
+                        if (Array.isArray(updatedNotes)) {
+                            set_state('notes', updatedNotes);
+                        }
+                    }, 100);
                 }
             }
         } catch (error: any) {
@@ -479,6 +488,45 @@ export default React.memo((props: any) => {
             setProcessingAI(null);
         }
     }, [active_note, selected_entry, set_state, processingAI]);
+
+    const handleSummarizeNote = React.useCallback(async () => {
+        if (!active_note || summarizing) return;
+        
+        // Check if API key is available
+        if (!hasOpenAIApiKey()) {
+            alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
+            return;
+        }
+        
+        setSummarizing(true);
+        setIsSummaryModalOpen(true);
+        setNoteSummary('');
+        
+        try {
+            const summary = await summarizeNote(active_note);
+            setNoteSummary(summary);
+            
+            // Save summary to database
+            await window.electron.summarize_note(active_note.id, summary);
+            
+            // Update the local state
+            const updatedNote = { ...active_note, summary };
+            set_state('active_note', updatedNote);
+            
+            // Update the notes list
+            const updatedNotes = await window.electron.fetch_all_notes();
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+            }
+            
+        } catch (error: any) {
+            console.error('Error summarizing note:', error);
+            alert(error.message || 'Failed to summarize note. Please try again.');
+            setIsSummaryModalOpen(false);
+        } finally {
+            setSummarizing(false);
+        }
+    }, [active_note, summarizing, set_state]);
 
     React.useLayoutEffect(() => {
         let timeoutId: NodeJS.Timeout;
@@ -785,14 +833,12 @@ export default React.memo((props: any) => {
                                         <Button 
                                             size="sm" 
                                             variant="outline" 
-                                            onClick={() => {
-                                                // TODO: Add summarize functionality
-                                                console.log('Summarize Note clicked');
-                                            }}
+                                            onClick={handleSummarizeNote}
+                                            disabled={summarizing}
                                             className="h-8 px-3"
                                             title="Summarize Note"
                                         >
-                                            Summarize Note
+                                            {summarizing ? 'Summarizing...' : 'Summarize Note'}
                                         </Button>
                                         <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
                                             <Plus className="h-4 w-4" />
@@ -961,6 +1007,14 @@ export default React.memo((props: any) => {
             <ApiKeyModal 
                 isOpen={isApiKeyModalOpen} 
                 onOpenChange={setIsApiKeyModalOpen} 
+            />
+            
+            <SummaryModal
+                isOpen={isSummaryModalOpen}
+                onOpenChange={setIsSummaryModalOpen}
+                noteTitle={active_note?.title || ''}
+                summary={noteSummary}
+                isLoading={summarizing}
             />
         </div>
     );

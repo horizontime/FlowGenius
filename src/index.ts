@@ -64,7 +64,7 @@ const createWindow = (): void => {
   // Note operations
   ipcMain.handle('create-note', async (ev, title: string) => {
     return await new Promise((res, rej) => {
-      create_note(title, (data: INote[]) => {
+      create_note(title, "", (data: INote[]) => {
         res(data)
       })
     })
@@ -146,6 +146,25 @@ const createWindow = (): void => {
     }
   })
 
+  // AI summarization operations
+  ipcMain.handle('summarize-note', async (ev, noteId: number, summary: string) => {
+    return await new Promise((res, rej) => {
+      // First get the note
+      get_note_with_entries(noteId, (note: INote) => {
+        if (!note) {
+          rej(new Error('Note not found'));
+          return;
+        }
+        
+        // Update the note with the summary
+        const updatedNote = { ...note, summary };
+        update_note(updatedNote, (updatedNotes: INote[]) => {
+          res(updatedNotes);
+        });
+      });
+    });
+  })
+
   // Window controls
   ipcMain.on('close-app', (ev, argz) => {
     mainWindow.close()
@@ -185,7 +204,7 @@ const template = [
     label: 'File',
     submenu: [
       {label: "New note", click: () => {
-        create_note("New Note", (data: INote[]) => {
+        create_note("New Note", "", (data: INote[]) => {
           mainWindow.webContents.send('update-notes-data', data);
         })
       }},

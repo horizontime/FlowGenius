@@ -10,7 +10,7 @@ export default React.memo((props: { entry: INoteEntry }) => {
         if (props.entry) {
             setContent(props.entry.body || '');
         }
-    }, [props.entry]);
+    }, [props.entry, props.entry?.body, props.entry?.updated_at]);
 
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
