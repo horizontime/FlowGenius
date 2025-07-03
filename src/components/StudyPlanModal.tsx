@@ -29,9 +29,11 @@ const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
 
-  // Function to remove asterisks from text
+  // Function to remove asterisks and hashtags from text
   const cleanStudyPlanText = (text: string) => {
-    return text.replace(/\*\*(.*?)\*\*/g, '$1');
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/^###\s*(.*)/gm, '$1');
   };
 
   const handleCopy = async () => {

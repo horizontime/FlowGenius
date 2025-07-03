@@ -186,7 +186,7 @@ const SortableEntry = React.memo(({
                         )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {entry.body ? (entry.body.length > 100 ? entry.body.substring(0, 100) + '...' : entry.body) : 'Empty'}
+                        {entry.body ? (entry.body.length > 100 ? entry.body.substring(0, 100) + '...' : entry.body) : 'No contents'}
                     </p>
                 </div>
             </div>
