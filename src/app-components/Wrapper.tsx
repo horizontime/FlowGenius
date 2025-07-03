@@ -499,8 +499,11 @@ export default React.memo((props: any) => {
         }
         
         setSummarizing(true);
-        setIsSummaryModalOpen(true);
         setNoteSummary('');
+        // Delay opening the summary modal to the next tick so that the click event
+        // that initiated the summary generation doesn\'t immediately propagate
+        // to the Radix Dialog overlay and trigger an unintended close.
+        setTimeout(() => setIsSummaryModalOpen(true), 0);
         
         try {
             const summary = await summarizeNote(active_note);
