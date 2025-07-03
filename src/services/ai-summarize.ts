@@ -40,7 +40,17 @@ export async function summarizeNote(note: INote): Promise<string> {
     throw new Error('No content found in the note entries to summarize.');
   }
 
-  const prompt = `Please provide a concise summary of the following note content in bullet points. Focus on the key points and main ideas. Format your response as bullet points using "•" symbols.
+  const prompt = `Please provide a structured summary of the following note content. For each note entry, create a bullet point with the entry title, followed by sub-bullets summarizing the key points from that entry's content.
+
+Use this exact format:
+• Entry Title 1
+  - Key point or summary about this entry
+  - Another important point about this entry
+  - Additional relevant details
+
+• Entry Title 2
+  - Key point or summary about this entry
+  - Another important point about this entry
 
 Note Title: "${note.title}"
 
