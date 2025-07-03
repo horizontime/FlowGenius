@@ -781,9 +781,23 @@ export default React.memo((props: any) => {
                                     </h2>
                                 )}
                                 {active_note && !editingMiddlePanelTitle && (
-                                    <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            onClick={() => {
+                                                // TODO: Add summarize functionality
+                                                console.log('Summarize Note clicked');
+                                            }}
+                                            className="h-8 px-3"
+                                            title="Summarize Note"
+                                        >
+                                            Summarize Note
+                                        </Button>
+                                        <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         </div>
