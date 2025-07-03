@@ -1054,7 +1054,9 @@ export default React.memo((props: any) => {
                             {/* Second row: Tags and action buttons */}
                             {active_note && !editingMiddlePanelTitle && (
                                 <div className="flex items-center justify-between gap-2 mt-2">
-                                    <TagsDisplay tags={active_note.tags || []} className="flex-1" />
+                                    <div className="flex-1">
+                                        <TagsDisplay tags={active_note.tags || []} />
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <Button 
                                             size="sm" 
