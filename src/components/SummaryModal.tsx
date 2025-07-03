@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Copy, Check, X } from 'lucide-react';
+import { FileText, Copy, Check, X, RefreshCw } from 'lucide-react';
 
 interface SummaryModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ interface SummaryModalProps {
   noteTitle: string;
   summary: string;
   isLoading?: boolean;
+  onRegenerate?: () => void;
 }
 
 const SummaryModal: React.FC<SummaryModalProps> = ({ 
@@ -23,7 +24,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
   onOpenChange, 
   noteTitle, 
   summary, 
-  isLoading = false 
+  isLoading = false,
+  onRegenerate
 }) => {
   const [copied, setCopied] = React.useState(false);
 
@@ -71,24 +73,38 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={handleCopy}
-            disabled={isLoading || !summary}
-            className="flex items-center gap-2"
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copy Summary
-              </>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleCopy}
+              disabled={isLoading || !summary}
+              className="flex items-center gap-2"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copy Summary
+                </>
+              )}
+            </Button>
+            
+            {onRegenerate && (
+              <Button
+                variant="outline"
+                onClick={onRegenerate}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Regenerate Summary
+              </Button>
             )}
-          </Button>
+          </div>
           
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="h-4 w-4 mr-2" />

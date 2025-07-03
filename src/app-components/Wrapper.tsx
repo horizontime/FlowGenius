@@ -492,7 +492,15 @@ export default React.memo((props: any) => {
     const handleSummarizeNote = React.useCallback(async () => {
         if (!active_note || summarizing) return;
         
-        // Check if API key is available
+        // Check if summary already exists
+        if (active_note.summary && active_note.summary.trim()) {
+            // Display existing summary
+            setNoteSummary(active_note.summary);
+            setTimeout(() => setIsSummaryModalOpen(true), 0);
+            return;
+        }
+        
+        // Check if API key is available for generating new summary
         if (!hasOpenAIApiKey()) {
             alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
             return;
@@ -526,6 +534,43 @@ export default React.memo((props: any) => {
             console.error('Error summarizing note:', error);
             alert(error.message || 'Failed to summarize note. Please try again.');
             setIsSummaryModalOpen(false);
+        } finally {
+            setSummarizing(false);
+        }
+    }, [active_note, summarizing, set_state]);
+
+    const handleRegenerateSummary = React.useCallback(async () => {
+        if (!active_note || summarizing) return;
+        
+        // Check if API key is available
+        if (!hasOpenAIApiKey()) {
+            alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
+            return;
+        }
+        
+        setSummarizing(true);
+        setNoteSummary('');
+        
+        try {
+            const summary = await summarizeNote(active_note);
+            setNoteSummary(summary);
+            
+            // Save summary to database
+            await window.electron.summarize_note(active_note.id, summary);
+            
+            // Update the local state
+            const updatedNote = { ...active_note, summary };
+            set_state('active_note', updatedNote);
+            
+            // Update the notes list
+            const updatedNotes = await window.electron.fetch_all_notes();
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+            }
+            
+        } catch (error: any) {
+            console.error('Error regenerating summary:', error);
+            alert(error.message || 'Failed to regenerate summary. Please try again.');
         } finally {
             setSummarizing(false);
         }
@@ -1018,6 +1063,7 @@ export default React.memo((props: any) => {
                 noteTitle={active_note?.title || ''}
                 summary={noteSummary}
                 isLoading={summarizing}
+                onRegenerate={handleRegenerateSummary}
             />
         </div>
     );
