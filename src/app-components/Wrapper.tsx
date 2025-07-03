@@ -17,6 +17,7 @@ import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
 import ApiKeyModal from '../components/ApiKeyModal';
 import SummaryModal from '../components/SummaryModal';
+import TagsDisplay from '../components/TagsDisplay';
 import { summarizeNote } from '../services/ai-summarize';
 
 // Drag and drop imports
@@ -784,6 +785,7 @@ export default React.memo((props: any) => {
                                                             {note.entries?.length || 0}
                                                         </Badge>
                                                     </div>
+                                                    <TagsDisplay tags={note.tags || []} className="mt-2" />
                                                 </div>
                                                 <Button
                                                     size="sm"
@@ -811,7 +813,9 @@ export default React.memo((props: any) => {
                 {/* Middle Panel - Note Entries */}
                 <ResizablePanel defaultSize={28.57} minSize={20} maxSize={40}>
                     <div className="flex flex-col h-full">
-                        <div className="p-4 border-b h-[60px] flex items-center app-dragger">
+                        <div className={`p-4 border-b flex flex-col app-dragger ${
+                            active_note?.tags && active_note.tags.length > 0 ? 'min-h-[80px]' : 'h-[60px]'
+                        }`}>
                             <div className="flex items-center justify-between w-full">
                                 {editingMiddlePanelTitle && active_note ? (
                                     <form 
@@ -864,17 +868,19 @@ export default React.memo((props: any) => {
                                         </div>
                                     </form>
                                 ) : (
-                                    <h2 
-                                        className={`font-semibold ${active_note ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-                                        onDoubleClick={() => {
-                                            if (active_note) {
-                                                setEditingMiddlePanelTitle(true);
-                                                setEditingTitle(active_note.title);
-                                            }
-                                        }}
-                                    >
-                                        {active_note ? active_note.title : 'Select a note'}
-                                    </h2>
+                                    <div className="flex-1">
+                                        <h2 
+                                            className={`font-semibold ${active_note ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                                            onDoubleClick={() => {
+                                                if (active_note) {
+                                                    setEditingMiddlePanelTitle(true);
+                                                    setEditingTitle(active_note.title);
+                                                }
+                                            }}
+                                        >
+                                            {active_note ? active_note.title : 'Select a note'}
+                                        </h2>
+                                    </div>
                                 )}
                                 {active_note && !editingMiddlePanelTitle && (
                                     <div className="flex items-center gap-2">
@@ -894,6 +900,9 @@ export default React.memo((props: any) => {
                                     </div>
                                 )}
                             </div>
+                            {active_note && !editingMiddlePanelTitle && (
+                                <TagsDisplay tags={active_note.tags || []} className="mt-2" />
+                            )}
                         </div>
                         <ScrollArea className="flex-1">
                             <div className="p-2">

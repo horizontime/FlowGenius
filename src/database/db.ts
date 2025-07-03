@@ -20,7 +20,7 @@ const create_tables = () => {
             if (err) console.error("Error creating notes table:", err);
         });
         
-        // Migration: Add summary column to existing notes table if it doesn't exist
+        // Migration: Add summary and tags columns to existing notes table if they don't exist
         db.run(`PRAGMA table_info(notes)`, (err: any, rows: any) => {
             if (err) {
                 console.error("Error checking table info:", err);
@@ -33,12 +33,24 @@ const create_tables = () => {
                 }
                 
                 const hasSummaryColumn = columns.some(col => col.name === 'summary');
+                const hasTagsColumn = columns.some(col => col.name === 'tags');
+                
                 if (!hasSummaryColumn) {
                     db.run(`ALTER TABLE notes ADD COLUMN summary TEXT`, (err: any) => {
                         if (err) {
                             console.error("Error adding summary column:", err);
                         } else {
                             console.log("Summary column added to existing notes table");
+                        }
+                    });
+                }
+                
+                if (!hasTagsColumn) {
+                    db.run(`ALTER TABLE notes ADD COLUMN tags TEXT`, (err: any) => {
+                        if (err) {
+                            console.error("Error adding tags column:", err);
+                        } else {
+                            console.log("Tags column added to existing notes table");
                         }
                     });
                 }
@@ -68,8 +80,8 @@ export const create_note = (title: string, summary: string = "", callback: Funct
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "INSERT INTO notes (title, summary, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            [title, summary, now, now],
+            "INSERT INTO notes (title, summary, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            [title, summary, JSON.stringify([]), now, now],
             function(err) {
                 if (err) {
                     console.error("Error creating note:", err);
@@ -98,8 +110,8 @@ export const update_note = (note: INote, callback: Function) => {
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "UPDATE notes SET title = ?, summary = ?, updated_at = ? WHERE id = ?",
-            [note.title, note.summary || "", now, note.id],
+            "UPDATE notes SET title = ?, summary = ?, tags = ?, updated_at = ? WHERE id = ?",
+            [note.title, note.summary || "", JSON.stringify(note.tags || []), now, note.id],
             (err) => {
                 if (err) {
                     console.error("Error updating note:", err);
@@ -154,6 +166,14 @@ export const get_all_notes = (callback: Function) => {
                 }
                 
                 notes.forEach((note) => {
+                    // Parse tags from JSON string
+                    try {
+                        note.tags = note.tags ? JSON.parse((note.tags as unknown) as string) : [];
+                    } catch (e) {
+                        console.error("Error parsing tags:", e);
+                        note.tags = [];
+                    }
+                    
                     db.all(
                         "SELECT * FROM note_entries WHERE note_id = ? ORDER BY order_index",
                         [note.id],
@@ -189,6 +209,14 @@ export const get_note_with_entries = (noteId: number, callback: Function) => {
                     console.error("Error getting note:", err);
                     callback(null);
                     return;
+                }
+                
+                // Parse tags from JSON string
+                try {
+                    note.tags = note.tags ? JSON.parse((note.tags as unknown) as string) : [];
+                } catch (e) {
+                    console.error("Error parsing tags:", e);
+                    note.tags = [];
                 }
                 
                 db.all(
@@ -294,6 +322,24 @@ export const reorder_note_entries = (noteId: number, entryIds: number[], callbac
                 }
             );
         });
+    });
+}
+
+export const update_note_tags = (noteId: number, tags: string[], callback: Function) => {
+    db.serialize(() => {
+        const now = Date.now();
+        db.run(
+            "UPDATE notes SET tags = ?, updated_at = ? WHERE id = ?",
+            [JSON.stringify(tags), now, noteId],
+            (err) => {
+                if (err) {
+                    console.error("Error updating note tags:", err);
+                    callback(null);
+                    return;
+                }
+                get_note_with_entries(noteId, callback);
+            }
+        );
     });
 }
 

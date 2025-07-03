@@ -84,6 +84,13 @@ const renderer = {
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
         return note;
     },
+    update_note_tags: async (noteId: number, tags: string[]): Promise<INote> => {
+        const note = await ipcRenderer.invoke('update-note-tags', noteId, tags)
+        // Fetch fresh data to update the UI
+        const all_notes = await ipcRenderer.invoke('fetch-all-notes')
+        window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        return note;
+    },
     
     // AI workflow operations
     process_note_entry_with_ai: async (noteTitle: string, entryHeading: string, apiKey?: string): Promise<string | null> => {

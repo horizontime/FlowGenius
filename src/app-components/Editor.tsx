@@ -2,6 +2,8 @@ import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { INoteEntry, INote } from "@/shared/types";
 import { useMainStore } from "@/shared/zust-store";
+import { generateTagsForNote } from "@/services/ai-tag-generator";
+import { hasOpenAIApiKey } from "@/shared/functions";
 
 export default React.memo((props: { entry: INoteEntry }) => {
     const [content, setContent] = React.useState('');
@@ -39,6 +41,19 @@ export default React.memo((props: { entry: INoteEntry }) => {
         try {
             // Persist changes to the database – the preload helper will handle background state refresh
             await window.electron.update_note_entry(updatedEntry);
+            
+            // Generate tags after successful save if API key is available
+            if (active_note && hasOpenAIApiKey()) {
+                try {
+                    const tags = await generateTagsForNote(active_note);
+                    if (tags && tags.length > 0) {
+                        await window.electron.update_note_tags(active_note.id, tags);
+                    }
+                } catch (error) {
+                    console.error("Error generating tags:", error);
+                    // Don't fail the save operation if tag generation fails
+                }
+            }
         } catch (e) {
             console.error("Error saving entry:", e);
         } finally {

@@ -12,7 +12,8 @@ import {
   create_note_entry,
   update_note_entry,
   delete_note_entry,
-  reorder_note_entries
+  reorder_note_entries,
+  update_note_tags
 } from './database/db';
 import { processNoteEntryWithAI } from './services/ai-workflow';
 import { INote, INoteEntry } from './shared/types';
@@ -147,6 +148,14 @@ const createWindow = (): void => {
   ipcMain.handle('reorder-note-entries', async (ev, noteId: number, entryIds: number[]) => {
     return await new Promise((res, rej) => {
       reorder_note_entries(noteId, entryIds, (data: INote) => {
+        res(data)
+      })
+    })
+  })
+
+  ipcMain.handle('update-note-tags', async (ev, noteId: number, tags: string[]) => {
+    return await new Promise((res, rej) => {
+      update_note_tags(noteId, tags, (data: INote) => {
         res(data)
       })
     })
