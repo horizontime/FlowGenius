@@ -203,14 +203,7 @@ export const create_note_entry = (noteId: number, heading: string, body: string,
                             return;
                         }
                         
-                        // Update the note's updated_at timestamp
-                        db.run(
-                            "UPDATE notes SET updated_at = ? WHERE id = ?",
-                            [now, noteId],
-                            () => {
-                                get_note_with_entries(noteId, callback);
-                            }
-                        );
+                        get_note_with_entries(noteId, callback);
                     }
                 );
             }
@@ -231,14 +224,7 @@ export const update_note_entry = (entry: INoteEntry, callback: Function) => {
                     return;
                 }
                 
-                // Update the parent note's updated_at timestamp
-                db.run(
-                    "UPDATE notes SET updated_at = ? WHERE id = ?",
-                    [now, entry.note_id],
-                    () => {
-                        get_note_with_entries(entry.note_id, callback);
-                    }
-                );
+                get_note_with_entries(entry.note_id, callback);
             }
         );
     });
@@ -256,15 +242,7 @@ export const delete_note_entry = (entryId: number, noteId: number, callback: Fun
                     return;
                 }
                 
-                // Update the parent note's updated_at timestamp
-                const now = Date.now();
-                db.run(
-                    "UPDATE notes SET updated_at = ? WHERE id = ?",
-                    [now, noteId],
-                    () => {
-                        get_note_with_entries(noteId, callback);
-                    }
-                );
+                get_note_with_entries(noteId, callback);
             }
         );
     });
@@ -272,7 +250,6 @@ export const delete_note_entry = (entryId: number, noteId: number, callback: Fun
 
 export const reorder_note_entries = (noteId: number, entryIds: number[], callback: Function) => {
     db.serialize(() => {
-        const now = Date.now();
         let completed = 0;
         
         entryIds.forEach((entryId, index) => {
@@ -286,14 +263,7 @@ export const reorder_note_entries = (noteId: number, entryIds: number[], callbac
                     
                     completed++;
                     if (completed === entryIds.length) {
-                        // Update the parent note's updated_at timestamp
-                        db.run(
-                            "UPDATE notes SET updated_at = ? WHERE id = ?",
-                            [now, noteId],
-                            () => {
-                                get_note_with_entries(noteId, callback);
-                            }
-                        );
+                        get_note_with_entries(noteId, callback);
                     }
                 }
             );

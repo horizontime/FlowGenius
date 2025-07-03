@@ -682,7 +682,7 @@ export default React.memo((props: any) => {
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <Calendar className="h-3 w-3 text-muted-foreground" />
                                                         <span className="text-xs text-muted-foreground">
-                                                            {formatDate(note.updated_at)}
+                                                            {formatDate(note.created_at)}
                                                         </span>
                                                         <Badge variant="secondary" className="text-xs">
                                                             {note.entries?.length || 0}
