@@ -11,6 +11,7 @@ export interface IMainStateObject {
 export interface INote {
     id: number;
     title: string;
+    summary?: string;
     created_at: number;
     updated_at: number;
     entries?: INoteEntry[];

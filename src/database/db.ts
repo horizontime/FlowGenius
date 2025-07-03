@@ -13,10 +13,36 @@ const create_tables = () => {
         db.run(`CREATE TABLE IF NOT EXISTS notes (
             id INTEGER UNIQUE PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
+            summary TEXT,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
         )`, (err) => {
             if (err) console.error("Error creating notes table:", err);
+        });
+        
+        // Migration: Add summary column to existing notes table if it doesn't exist
+        db.run(`PRAGMA table_info(notes)`, (err: any, rows: any) => {
+            if (err) {
+                console.error("Error checking table info:", err);
+                return;
+            }
+            db.all(`PRAGMA table_info(notes)`, (err: any, columns: any[]) => {
+                if (err) {
+                    console.error("Error getting table columns:", err);
+                    return;
+                }
+                
+                const hasSummaryColumn = columns.some(col => col.name === 'summary');
+                if (!hasSummaryColumn) {
+                    db.run(`ALTER TABLE notes ADD COLUMN summary TEXT`, (err: any) => {
+                        if (err) {
+                            console.error("Error adding summary column:", err);
+                        } else {
+                            console.log("Summary column added to existing notes table");
+                        }
+                    });
+                }
+            });
         });
         
         // Create note_entries table
@@ -38,12 +64,12 @@ const create_tables = () => {
 // Initialize tables
 create_tables();
 
-export const create_note = (title: string, callback: Function) => {
+export const create_note = (title: string, summary: string = "", callback: Function) => {
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "INSERT INTO notes (title, created_at, updated_at) VALUES (?, ?, ?)",
-            [title, now, now],
+            "INSERT INTO notes (title, summary, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            [title, summary, now, now],
             function(err) {
                 if (err) {
                     console.error("Error creating note:", err);
@@ -72,8 +98,8 @@ export const update_note = (note: INote, callback: Function) => {
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "UPDATE notes SET title = ?, updated_at = ? WHERE id = ?",
-            [note.title, now, note.id],
+            "UPDATE notes SET title = ?, summary = ?, updated_at = ? WHERE id = ?",
+            [note.title, note.summary || "", now, note.id],
             (err) => {
                 if (err) {
                     console.error("Error updating note:", err);
