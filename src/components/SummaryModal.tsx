@@ -29,6 +29,11 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
 }) => {
   const [copied, setCopied] = React.useState(false);
 
+  // Function to remove asterisks from text
+  const cleanSummaryText = (text: string) => {
+    return text.replace(/\*\*(.*?)\*\*/g, '$1');
+  };
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(summary);
@@ -65,7 +70,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
               <div className="space-y-4 pb-4">
                 <div className="p-4 bg-muted rounded-xl">
                   <h3 className="font-medium mb-2">Summary:</h3>
-                  <div className="text-sm whitespace-pre-wrap leading-relaxed">{summary}</div>
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed">{cleanSummaryText(summary)}</div>
                 </div>
               </div>
             </ScrollArea>
