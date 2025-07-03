@@ -191,6 +191,25 @@ const createWindow = (): void => {
     });
   })
 
+  // AI study plan operations  
+  ipcMain.handle('generate-study-plan', async (ev, noteId: number, studyPlan: string) => {
+    return await new Promise((res, rej) => {
+      // First get the note
+      get_note_with_entries(noteId, (note: INote) => {
+        if (!note) {
+          rej(new Error('Note not found'));
+          return;
+        }
+        
+        // Update the note with the study plan
+        const updatedNote = { ...note, study_plan: studyPlan };
+        update_note(updatedNote, (updatedNotes: INote[]) => {
+          res(updatedNotes);
+        });
+      });
+    });
+  })
+
   // Window controls
   ipcMain.on('close-app', (ev, argz) => {
     mainWindow.close()

@@ -34,6 +34,7 @@ const create_tables = () => {
                 
                 const hasSummaryColumn = columns.some(col => col.name === 'summary');
                 const hasTagsColumn = columns.some(col => col.name === 'tags');
+                const hasStudyPlanColumn = columns.some(col => col.name === 'study_plan');
                 
                 if (!hasSummaryColumn) {
                     db.run(`ALTER TABLE notes ADD COLUMN summary TEXT`, (err: any) => {
@@ -51,6 +52,16 @@ const create_tables = () => {
                             console.error("Error adding tags column:", err);
                         } else {
                             console.log("Tags column added to existing notes table");
+                        }
+                    });
+                }
+                
+                if (!hasStudyPlanColumn) {
+                    db.run(`ALTER TABLE notes ADD COLUMN study_plan TEXT`, (err: any) => {
+                        if (err) {
+                            console.error("Error adding study_plan column:", err);
+                        } else {
+                            console.log("Study plan column added to existing notes table");
                         }
                     });
                 }
@@ -80,8 +91,8 @@ export const create_note = (title: string, summary: string = "", callback: Funct
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "INSERT INTO notes (title, summary, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            [title, summary, JSON.stringify([]), now, now],
+            "INSERT INTO notes (title, summary, study_plan, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            [title, summary, "", JSON.stringify([]), now, now],
             function(err) {
                 if (err) {
                     console.error("Error creating note:", err);
@@ -110,8 +121,8 @@ export const update_note = (note: INote, callback: Function) => {
     db.serialize(() => {
         const now = Date.now();
         db.run(
-            "UPDATE notes SET title = ?, summary = ?, tags = ?, updated_at = ? WHERE id = ?",
-            [note.title, note.summary || "", JSON.stringify(note.tags || []), now, note.id],
+            "UPDATE notes SET title = ?, summary = ?, study_plan = ?, tags = ?, updated_at = ? WHERE id = ?",
+            [note.title, note.summary || "", note.study_plan || "", JSON.stringify(note.tags || []), now, note.id],
             (err) => {
                 if (err) {
                     console.error("Error updating note:", err);

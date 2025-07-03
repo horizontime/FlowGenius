@@ -101,6 +101,11 @@ const renderer = {
     summarize_note: async (noteId: number, summary: string): Promise<INote[]> => {
         return await ipcRenderer.invoke('summarize-note', noteId, summary);
     },
+
+    // AI study plan operations
+    generate_study_plan: async (noteId: number, studyPlan: string): Promise<INote[]> => {
+        return await ipcRenderer.invoke('generate-study-plan', noteId, studyPlan);
+    },
     
     // Legacy functions for backward compatibility (if needed)
     open_note_in_child_proc: (note_id: string) => {

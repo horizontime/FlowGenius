@@ -12,6 +12,7 @@ export interface INote {
     id: number;
     title: string;
     summary?: string;
+    study_plan?: string;
     tags?: string[];
     created_at: number;
     updated_at: number;

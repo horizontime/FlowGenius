@@ -17,9 +17,11 @@ import Editor from './Editor';
 import EmptyNoteUI from './EmptyNoteUI';
 import ApiKeyModal from '../components/ApiKeyModal';
 import SummaryModal from '../components/SummaryModal';
+import StudyPlanModal from '../components/StudyPlanModal';
 import TagsDisplay from '../components/TagsDisplay';
 import TagFilter from '../components/TagFilter';
 import { summarizeNote } from '../services/ai-summarize';
+import { generateStudyPlan } from '../services/ai-study-plan';
 import { generateTagsForNote } from '../services/ai-tag-generator';
 
 // Drag and drop imports
@@ -212,6 +214,9 @@ export default React.memo((props: any) => {
     const [isSummaryModalOpen, setIsSummaryModalOpen] = React.useState(false);
     const [summarizing, setSummarizing] = React.useState(false);
     const [noteSummary, setNoteSummary] = React.useState('');
+    const [isStudyPlanModalOpen, setIsStudyPlanModalOpen] = React.useState(false);
+    const [generatingStudyPlan, setGeneratingStudyPlan] = React.useState(false);
+    const [noteStudyPlan, setNoteStudyPlan] = React.useState('');
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -643,6 +648,93 @@ export default React.memo((props: any) => {
         }
     }, [active_note, summarizing, set_state]);
 
+    const handleCreateStudyPlan = React.useCallback(async () => {
+        if (!active_note || generatingStudyPlan) return;
+        
+        // Check if study plan already exists
+        if (active_note.study_plan && active_note.study_plan.trim()) {
+            // Display existing study plan
+            setNoteStudyPlan(active_note.study_plan);
+            setTimeout(() => setIsStudyPlanModalOpen(true), 0);
+            return;
+        }
+        
+        // Check if API key is available for generating new study plan
+        if (!hasOpenAIApiKey()) {
+            alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
+            return;
+        }
+        
+        setGeneratingStudyPlan(true);
+        setNoteStudyPlan('');
+        // Delay opening the study plan modal to the next tick so that the click event
+        // that initiated the study plan generation doesn't immediately propagate
+        // to the Radix Dialog overlay and trigger an unintended close.
+        setTimeout(() => setIsStudyPlanModalOpen(true), 0);
+        
+        try {
+            const studyPlan = await generateStudyPlan(active_note);
+            setNoteStudyPlan(studyPlan);
+            
+            // Save study plan to database
+            await window.electron.generate_study_plan(active_note.id, studyPlan);
+            
+            // Update the local state
+            const updatedNote = { ...active_note, study_plan: studyPlan };
+            set_state('active_note', updatedNote);
+            
+            // Update the notes list
+            const updatedNotes = await window.electron.fetch_all_notes();
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+            }
+            
+        } catch (error: any) {
+            console.error('Error generating study plan:', error);
+            alert(error.message || 'Failed to generate study plan. Please try again.');
+            setIsStudyPlanModalOpen(false);
+        } finally {
+            setGeneratingStudyPlan(false);
+        }
+    }, [active_note, generatingStudyPlan, set_state]);
+
+    const handleRegenerateStudyPlan = React.useCallback(async () => {
+        if (!active_note || generatingStudyPlan) return;
+        
+        // Check if API key is available
+        if (!hasOpenAIApiKey()) {
+            alert('Please configure your OpenAI API key first by clicking the key icon in the top right.');
+            return;
+        }
+        
+        setGeneratingStudyPlan(true);
+        setNoteStudyPlan('');
+        
+        try {
+            const studyPlan = await generateStudyPlan(active_note);
+            setNoteStudyPlan(studyPlan);
+            
+            // Save study plan to database
+            await window.electron.generate_study_plan(active_note.id, studyPlan);
+            
+            // Update the local state
+            const updatedNote = { ...active_note, study_plan: studyPlan };
+            set_state('active_note', updatedNote);
+            
+            // Update the notes list
+            const updatedNotes = await window.electron.fetch_all_notes();
+            if (Array.isArray(updatedNotes)) {
+                set_state('notes', updatedNotes);
+            }
+            
+        } catch (error: any) {
+            console.error('Error regenerating study plan:', error);
+            alert(error.message || 'Failed to regenerate study plan. Please try again.');
+        } finally {
+            setGeneratingStudyPlan(false);
+        }
+    }, [active_note, generatingStudyPlan, set_state]);
+
     React.useLayoutEffect(() => {
         let timeoutId: NodeJS.Timeout;
         
@@ -966,6 +1058,16 @@ export default React.memo((props: any) => {
                                         >
                                             {summarizing ? 'Summarizing...' : 'Summarize Note'}
                                         </Button>
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            onClick={handleCreateStudyPlan}
+                                            disabled={generatingStudyPlan}
+                                            className="h-8 px-3"
+                                            title="Create Study Plan"
+                                        >
+                                            {generatingStudyPlan ? 'Creating...' : 'Create Study Plan'}
+                                        </Button>
                                         <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
                                             <Plus className="h-4 w-4" />
                                         </Button>
@@ -1145,6 +1247,15 @@ export default React.memo((props: any) => {
                 summary={noteSummary}
                 isLoading={summarizing}
                 onRegenerate={handleRegenerateSummary}
+            />
+            
+            <StudyPlanModal
+                isOpen={isStudyPlanModalOpen}
+                onOpenChange={setIsStudyPlanModalOpen}
+                noteTitle={active_note?.title || ''}
+                studyPlan={noteStudyPlan}
+                isLoading={generatingStudyPlan}
+                onRegenerate={handleRegenerateStudyPlan}
             />
         </div>
     );
