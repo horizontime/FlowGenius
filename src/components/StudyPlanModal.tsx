@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { GraduationCap, Copy, Check, X, RefreshCw } from 'lucide-react';
+import { GraduationCap, Copy, Check, X, RefreshCw, Download } from 'lucide-react';
 
 interface StudyPlanModalProps {
   isOpen: boolean;
@@ -42,6 +42,20 @@ const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
     } catch (err) {
       console.error('Failed to copy text: ', err);
     }
+  };
+
+  const handleDownload = () => {
+    const cleanedStudyPlan = cleanStudyPlanText(studyPlan);
+    const content = `3-Day Study Plan: ${noteTitle}\n\n${cleanedStudyPlan}`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${noteTitle}_study_plan.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -109,6 +123,15 @@ const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
                 Regenerate Study Plan
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+              disabled={isLoading || !studyPlan}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
           </div>
           
           <Button variant="outline" onClick={() => onOpenChange(false)}>

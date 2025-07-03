@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Copy, Check, X, RefreshCw } from 'lucide-react';
+import { FileText, Copy, Check, X, RefreshCw, Download } from 'lucide-react';
 
 interface SummaryModalProps {
   isOpen: boolean;
@@ -42,6 +42,20 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
     } catch (err) {
       console.error('Failed to copy text: ', err);
     }
+  };
+
+  const handleDownload = () => {
+    const cleanedSummary = cleanSummaryText(summary);
+    const content = `Note Summary: ${noteTitle}\n\n${cleanedSummary}`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${noteTitle}_summary.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -109,6 +123,15 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
                 Regenerate Summary
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+              disabled={isLoading || !summary}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
           </div>
           
           <Button variant="outline" onClick={() => onOpenChange(false)}>
