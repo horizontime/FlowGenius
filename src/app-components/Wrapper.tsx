@@ -1080,8 +1080,8 @@ export default React.memo((props: any) => {
                                 </div>
                             )}
                         </div>
-                        <ScrollArea className="flex-1">
-                            <div className="p-2">
+                        <ScrollArea className="flex-1 overflow-hidden">
+                            <div className="p-2 space-y-2">
                                 {active_note?.entries && active_note.entries.length > 0 ? (
                                     <DndContext
                                         sensors={sensors}
