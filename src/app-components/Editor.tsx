@@ -19,6 +19,25 @@ export default React.memo((props: { entry: INoteEntry }) => {
     }, [props.entry, props.entry?.body, props.entry?.updated_at]);
 
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const tagGenerationTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    const generate_tags = React.useCallback(async (noteId: number) => {
+        if (!hasOpenAIApiKey()) return;
+        
+        try {
+            // Get the most up-to-date note with all entries from the database
+            const freshNote = await window.electron.get_note_with_entries(noteId);
+            if (freshNote) {
+                console.log("Generating tags for note:", freshNote.title);
+                const tags = await generateTagsForNote(freshNote);
+                console.log("Generated tags:", tags);
+                // Always update tags (even if empty) to ensure UI consistency
+                await window.electron.update_note_tags(noteId, tags);
+            }
+        } catch (error) {
+            console.error("Error generating tags:", error);
+        }
+    }, []);
 
     const save_content = React.useCallback(async (value: string) => {
         if (!props.entry || isSaving) return;
@@ -42,24 +61,22 @@ export default React.memo((props: { entry: INoteEntry }) => {
             // Persist changes to the database – the preload helper will handle background state refresh
             await window.electron.update_note_entry(updatedEntry);
             
-            // Generate tags after successful save if API key is available
-            if (active_note && hasOpenAIApiKey()) {
-                try {
-                    const tags = await generateTagsForNote(active_note);
-                    if (tags && tags.length > 0) {
-                        await window.electron.update_note_tags(active_note.id, tags);
-                    }
-                } catch (error) {
-                    console.error("Error generating tags:", error);
-                    // Don't fail the save operation if tag generation fails
+            // Debounce tag generation to avoid excessive API calls
+            if (active_note) {
+                if (tagGenerationTimeoutRef.current) {
+                    clearTimeout(tagGenerationTimeoutRef.current);
                 }
+                
+                tagGenerationTimeoutRef.current = setTimeout(() => {
+                    generate_tags(active_note.id);
+                }, 2000); // Wait 2 seconds after last save before generating tags
             }
         } catch (e) {
             console.error("Error saving entry:", e);
         } finally {
             setIsSaving(false);
         }
-    }, [props.entry, isSaving, active_note, set_state]);
+    }, [props.entry, isSaving, active_note, set_state, generate_tags]);
 
     const handle_change = React.useCallback((value: string) => {
         setContent(value);
@@ -85,6 +102,9 @@ export default React.memo((props: { entry: INoteEntry }) => {
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
+            }
+            if (tagGenerationTimeoutRef.current) {
+                clearTimeout(tagGenerationTimeoutRef.current);
             }
         };
     }, []);
