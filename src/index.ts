@@ -43,6 +43,23 @@ const createWindow = (): void => {
     },
   });
 
+  // Adjust CSP headers to allow connections to OpenAI API during development
+  // This ensures that the renderer process can successfully call the external API.
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = details.responseHeaders || {};
+
+    // Merge or create the CSP header allowing required sources.
+    const cspValue = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; connect-src 'self' https://api.openai.com";
+
+    // Electron may provide header keys in lowercase or Pascal-Case depending on the platform.
+    responseHeaders['Content-Security-Policy'] = [cspValue];
+    responseHeaders['content-security-policy'] = [cspValue];
+
+    callback({
+      responseHeaders
+    });
+  });
+
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
