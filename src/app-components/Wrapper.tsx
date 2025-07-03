@@ -857,8 +857,8 @@ export default React.memo((props: any) => {
                                 onClearAll={handle_clear_tag_filters}
                             />
                         </div>
-                        <ScrollArea className="flex-1">
-                            <div className="p-2">
+                        <ScrollArea className="flex-1 overflow-hidden">
+                            <div className="p-2 space-y-2">
                                 {filteredNotes.map((note) => {
                                     const isActive = active_note?.id === note.id;
                                     const isEditing = editingNoteId === note.id;
@@ -866,7 +866,7 @@ export default React.memo((props: any) => {
                                     return (
                                         <div
                                             key={note.id}
-                                            className={`group p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
+                                            className={`group p-3 rounded-lg cursor-pointer transition-colors ${
                                                 isActive ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50'
                                             }`}
                                             onClick={() => !isEditing && handle_set_active_note(note)}
