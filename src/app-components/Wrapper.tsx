@@ -980,6 +980,7 @@ export default React.memo((props: any) => {
                         <div className={`p-4 border-b flex flex-col app-dragger ${
                             active_note?.tags && active_note.tags.length > 0 ? 'min-h-[80px]' : 'h-[60px]'
                         }`}>
+                            {/* First row: Note title and plus button */}
                             <div className="flex items-center justify-between w-full">
                                 {editingMiddlePanelTitle && active_note ? (
                                     <form 
@@ -1032,21 +1033,28 @@ export default React.memo((props: any) => {
                                         </div>
                                     </form>
                                 ) : (
-                                    <div className="flex-1">
-                                        <h2 
-                                            className={`font-semibold ${active_note ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
-                                            onDoubleClick={() => {
-                                                if (active_note) {
-                                                    setEditingMiddlePanelTitle(true);
-                                                    setEditingTitle(active_note.title);
-                                                }
-                                            }}
-                                        >
-                                            {active_note ? active_note.title : 'Select a note'}
-                                        </h2>
-                                    </div>
+                                    <h2 
+                                        className={`font-semibold ${active_note ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
+                                        onDoubleClick={() => {
+                                            if (active_note) {
+                                                setEditingMiddlePanelTitle(true);
+                                                setEditingTitle(active_note.title);
+                                            }
+                                        }}
+                                    >
+                                        {active_note ? active_note.title : 'Select a note'}
+                                    </h2>
                                 )}
                                 {active_note && !editingMiddlePanelTitle && (
+                                    <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                            {/* Second row: Tags and action buttons */}
+                            {active_note && !editingMiddlePanelTitle && (
+                                <div className="flex items-center justify-between gap-2 mt-2">
+                                    <TagsDisplay tags={active_note.tags || []} className="flex-1" />
                                     <div className="flex items-center gap-2">
                                         <Button 
                                             size="sm" 
@@ -1068,14 +1076,8 @@ export default React.memo((props: any) => {
                                         >
                                             {generatingStudyPlan ? 'Creating...' : 'Create Study Plan'}
                                         </Button>
-                                        <Button size="sm" variant="ghost" onClick={handle_add_new_entry}>
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
                                     </div>
-                                )}
-                            </div>
-                            {active_note && !editingMiddlePanelTitle && (
-                                <TagsDisplay tags={active_note.tags || []} className="mt-2" />
+                                </div>
                             )}
                         </div>
                         <ScrollArea className="flex-1">
