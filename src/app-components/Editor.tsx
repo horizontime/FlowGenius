@@ -28,11 +28,22 @@ export default React.memo((props: { entry: INoteEntry }) => {
             // Get the most up-to-date note with all entries from the database
             const freshNote = await window.electron.get_note_with_entries(noteId);
             if (freshNote) {
-                console.log("Generating tags for note:", freshNote.title);
-                const tags = await generateTagsForNote(freshNote);
-                console.log("Generated tags:", tags);
-                // Always update tags (even if empty) to ensure UI consistency
-                await window.electron.update_note_tags(noteId, tags);
+                // Check if note has substantial content (>50 characters total)
+                const totalContentLength = freshNote.entries?.reduce((total: number, entry: INoteEntry) => {
+                    return total + (entry.body?.length || 0);
+                }, 0) || 0;
+                
+                if (totalContentLength > 50) {
+                    console.log("Generating tags for note:", freshNote.title, "with", totalContentLength, "characters");
+                    const tags = await generateTagsForNote(freshNote);
+                    console.log("Generated tags:", tags);
+                    // Always update tags (even if empty) to ensure UI consistency
+                    await window.electron.update_note_tags(noteId, tags);
+                } else {
+                    console.log("Skipping tag generation for note:", freshNote.title, "- insufficient content (", totalContentLength, "characters)");
+                    // Clear tags if content is too short
+                    await window.electron.update_note_tags(noteId, []);
+                }
             }
         } catch (error) {
             console.error("Error generating tags:", error);

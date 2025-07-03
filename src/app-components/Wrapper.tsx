@@ -19,6 +19,7 @@ import ApiKeyModal from '../components/ApiKeyModal';
 import SummaryModal from '../components/SummaryModal';
 import TagsDisplay from '../components/TagsDisplay';
 import { summarizeNote } from '../services/ai-summarize';
+import { generateTagsForNote } from '../services/ai-tag-generator';
 
 // Drag and drop imports
 import {
@@ -480,6 +481,30 @@ export default React.memo((props: any) => {
                             set_state('notes', updatedNotes);
                         }
                     }, 100);
+                    
+                    // Generate tags after AI content is successfully added
+                    // Only if the note has substantial content (>50 characters total)
+                    const totalContentLength = active_note.entries?.reduce((total, e) => {
+                        const bodyLength = e.id === entry.id ? updatedBody.length : (e.body?.length || 0);
+                        return total + bodyLength;
+                    }, 0) || 0;
+                    
+                    if (totalContentLength > 50) {
+                        try {
+                            console.log("Generating tags after AI enhancement for note:", active_note.title);
+                            // Get the most up-to-date note with all entries from the database
+                            const freshNote = await window.electron.get_note_with_entries(active_note.id);
+                            if (freshNote) {
+                                const tags = await generateTagsForNote(freshNote);
+                                console.log("Generated tags after AI enhancement:", tags);
+                                // Always update tags (even if empty) to ensure UI consistency
+                                await window.electron.update_note_tags(active_note.id, tags);
+                            }
+                        } catch (tagError) {
+                            console.error("Error generating tags after AI enhancement:", tagError);
+                            // Don't fail the AI enhancement if tag generation fails
+                        }
+                    }
                 }
             }
         } catch (error: any) {
