@@ -978,7 +978,7 @@ export default React.memo((props: any) => {
                 <ResizablePanel defaultSize={28.57} minSize={20} maxSize={40}>
                     <div className="flex flex-col h-full">
                         <div className={`p-4 border-b flex flex-col app-dragger ${
-                            active_note?.tags && active_note.tags.length > 0 ? 'min-h-[80px]' : 'h-[60px]'
+                            active_note && !editingMiddlePanelTitle ? 'min-h-[80px]' : 'h-[60px]'
                         }`}>
                             {/* First row: Note title and plus button */}
                             <div className="flex items-center justify-between w-full">
