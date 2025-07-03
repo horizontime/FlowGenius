@@ -139,8 +139,8 @@ const createWindow = (): void => {
 
   ipcMain.handle('delete-note-entry', async (ev, entryId: number, noteId: number) => {
     return await new Promise((res, rej) => {
-      delete_note_entry(entryId, noteId, (data: INote) => {
-        res(data)
+      delete_note_entry(entryId, noteId, (data: INote, options?: { shouldRegenerateTags: boolean }) => {
+        res({ note: data, shouldRegenerateTags: options?.shouldRegenerateTags || false })
       })
     })
   })

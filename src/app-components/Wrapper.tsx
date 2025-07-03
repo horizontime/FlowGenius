@@ -751,13 +751,53 @@ export default React.memo((props: any) => {
                 set_state('notes', sortedNotes);
             }, 100);
         };
+
+        const handleTagRegeneration = async (ev: Event & {detail: {noteId: number}}) => {
+            const { noteId } = ev.detail;
+            if (noteId) {
+                try {
+                    // Import the tag generation function dynamically
+                    const { generateTagsForNote } = await import('../services/ai-tag-generator');
+                    
+                    if (!hasOpenAIApiKey()) {
+                        console.log("Skipping tag regeneration - no OpenAI API key");
+                        return;
+                    }
+                    
+                    // Get the most up-to-date note
+                    const freshNote = await window.electron.get_note_with_entries(noteId);
+                    if (freshNote) {
+                        // Check if note has substantial content (>50 characters total)
+                        const totalContentLength = freshNote.entries?.reduce((total: number, entry: any) => {
+                            return total + (entry.body?.length || 0);
+                        }, 0) || 0;
+                        
+                        let newTags: string[] = [];
+                        if (totalContentLength > 50) {
+                            console.log("Regenerating tags after entry deletion for note:", freshNote.title);
+                            newTags = await generateTagsForNote(freshNote);
+                            console.log("Regenerated tags:", newTags);
+                        } else {
+                            console.log("Clearing tags - insufficient content after entry deletion");
+                        }
+                        
+                        // Update tags (even if empty)
+                        await window.electron.update_note_tags(noteId, newTags);
+                    }
+                } catch (error) {
+                    console.error("Error regenerating tags after entry deletion:", error);
+                }
+            }
+        };
         
         window.addEventListener('all-notes-data', handleNotesData);
+        window.addEventListener('regenerate-tags', handleTagRegeneration);
         
         // Cleanup
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
             window.removeEventListener('all-notes-data', handleNotesData);
+            window.removeEventListener('regenerate-tags', handleTagRegeneration);
         };
     }, [set_state]);
 

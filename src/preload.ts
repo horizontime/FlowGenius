@@ -73,9 +73,19 @@ const renderer = {
         return note;
     },
     delete_note_entry: async (entryId: number, noteId: number): Promise<INote> => {
-        const note = await ipcRenderer.invoke('delete-note-entry', entryId, noteId)
+        const result = await ipcRenderer.invoke('delete-note-entry', entryId, noteId)
+        const note = result.note || result; // Handle both old and new response formats
+        const shouldRegenerateTags = result.shouldRegenerateTags || false;
+        
+        // Broadcast the updated notes
         const all_notes = await ipcRenderer.invoke('fetch-all-notes')
         window.dispatchEvent(broadcast_event('all-notes-data', all_notes));
+        
+        // Trigger tag regeneration if needed
+        if (shouldRegenerateTags && note) {
+            window.dispatchEvent(broadcast_event('regenerate-tags', { noteId: note.id }));
+        }
+        
         return note;
     },
     reorder_note_entries: async (noteId: number, entryIds: number[]): Promise<INote> => {

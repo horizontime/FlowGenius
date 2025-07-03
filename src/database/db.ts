@@ -307,7 +307,10 @@ export const delete_note_entry = (entryId: number, noteId: number, callback: Fun
                     return;
                 }
                 
-                get_note_with_entries(noteId, callback);
+                // Return the updated note and indicate that tags should be regenerated
+                get_note_with_entries(noteId, (note: INote) => {
+                    callback(note, { shouldRegenerateTags: true });
+                });
             }
         );
     });
