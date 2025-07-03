@@ -18,6 +18,7 @@ import EmptyNoteUI from './EmptyNoteUI';
 import ApiKeyModal from '../components/ApiKeyModal';
 import SummaryModal from '../components/SummaryModal';
 import TagsDisplay from '../components/TagsDisplay';
+import TagFilter from '../components/TagFilter';
 import { summarizeNote } from '../services/ai-summarize';
 import { generateTagsForNote } from '../services/ai-tag-generator';
 
@@ -198,6 +199,7 @@ export default React.memo((props: any) => {
     const set_state = useMainStore(state => state.set_state);
     
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [selectedTagFilters, setSelectedTagFilters] = React.useState<string[]>([]);
     const [editingNoteId, setEditingNoteId] = React.useState<number | null>(null);
     const [editingEntryId, setEditingEntryId] = React.useState<number | null>(null);
     const [editingMiddlePanelTitle, setEditingMiddlePanelTitle] = React.useState<boolean>(false);
@@ -219,28 +221,53 @@ export default React.memo((props: any) => {
         })
     );
 
+    // Get all available tags from notes
+    const availableTags = React.useMemo(() => {
+        if (!Array.isArray(notes)) return [];
+        
+        const tagSet = new Set<string>();
+        notes.forEach(note => {
+            if (note.tags && Array.isArray(note.tags)) {
+                note.tags.forEach(tag => tagSet.add(tag));
+            }
+        });
+        
+        return Array.from(tagSet).sort();
+    }, [notes]);
+
     const filteredNotes = React.useMemo(() => {
         if (!Array.isArray(notes)) {
             console.warn('Notes is not an array:', notes);
             return [];
         }
         
-        // If no search query, return already sorted notes (they come pre-sorted from database)
-        if (!searchQuery.trim()) {
-            return notes;
+        let filtered = notes;
+        
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const searchLower = searchQuery.toLowerCase();
+            filtered = filtered.filter(note => {
+                // Search in note title
+                if (note.title.toLowerCase().includes(searchLower)) return true;
+                // Search in note entries
+                return note.entries?.some(entry => 
+                    entry.heading.toLowerCase().includes(searchLower) ||
+                    entry.body?.toLowerCase().includes(searchLower)
+                ) ?? false;
+            });
         }
         
-        const searchLower = searchQuery.toLowerCase();
-        return notes.filter(note => {
-            // Search in note title
-            if (note.title.toLowerCase().includes(searchLower)) return true;
-            // Search in note entries
-            return note.entries?.some(entry => 
-                entry.heading.toLowerCase().includes(searchLower) ||
-                entry.body?.toLowerCase().includes(searchLower)
-            ) ?? false;
-        });
-    }, [notes, searchQuery]);
+        // Filter by selected tags
+        if (selectedTagFilters.length > 0) {
+            filtered = filtered.filter(note => {
+                if (!note.tags || !Array.isArray(note.tags)) return false;
+                // Note must have ALL selected tags (AND logic)
+                return selectedTagFilters.every(tag => note.tags!.includes(tag));
+            });
+        }
+        
+        return filtered;
+    }, [notes, searchQuery, selectedTagFilters]);
 
     const handle_create_new_note = React.useCallback(async () => {
         const newNotes = await window.electron.create_note('New Note');
@@ -267,6 +294,20 @@ export default React.memo((props: any) => {
             set_state('selected_entry', null);
         }
     }, [set_state]);
+
+    const handle_tag_filter_toggle = React.useCallback((tag: string) => {
+        setSelectedTagFilters(prev => {
+            if (prev.includes(tag)) {
+                return prev.filter(t => t !== tag);
+            } else {
+                return [...prev, tag];
+            }
+        });
+    }, []);
+
+    const handle_clear_tag_filters = React.useCallback(() => {
+        setSelectedTagFilters([]);
+    }, []);
 
     const handle_delete_note = React.useCallback(async () => {
         if (active_note && confirm("Are you sure you want to delete this note?")) {
@@ -707,7 +748,7 @@ export default React.memo((props: any) => {
                                 <Plus className="h-4 w-4" />
                             </Button>
                         </div>
-                        <div className="pt-6 pb-4 px-4">
+                        <div className="pt-6 pb-4 px-4 space-y-3">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -717,6 +758,12 @@ export default React.memo((props: any) => {
                                     className="pl-9"
                                 />
                             </div>
+                            <TagFilter
+                                availableTags={availableTags}
+                                selectedTags={selectedTagFilters}
+                                onTagToggle={handle_tag_filter_toggle}
+                                onClearAll={handle_clear_tag_filters}
+                            />
                         </div>
                         <ScrollArea className="flex-1">
                             <div className="p-2">
