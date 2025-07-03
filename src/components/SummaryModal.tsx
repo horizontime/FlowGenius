@@ -62,8 +62,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
             </div>
           ) : (
             <ScrollArea className="h-[calc(80vh-180px)] pr-4">
-              <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
+              <div className="space-y-4 pb-4">
+                <div className="p-4 bg-muted rounded-xl">
                   <h3 className="font-medium mb-2">Summary:</h3>
                   <div className="text-sm whitespace-pre-wrap leading-relaxed">{summary}</div>
                 </div>
