@@ -40,7 +40,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-w-[90vw] w-full max-h-[80vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Note Summary
@@ -50,7 +50,7 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 min-h-0 py-4">
+        <div className="flex-1 overflow-hidden py-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="flex items-center gap-2">
@@ -59,18 +59,18 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
               </div>
             </div>
           ) : (
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-[calc(80vh-180px)] pr-4">
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <h3 className="font-medium mb-2">Summary:</h3>
-                  <div className="text-sm whitespace-pre-wrap">{summary}</div>
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed">{summary}</div>
                 </div>
               </div>
             </ScrollArea>
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
           <Button
             variant="outline"
             onClick={handleCopy}
