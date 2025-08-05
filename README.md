@@ -6,6 +6,17 @@ An AI-native note-taking app that leverages LangGraph to automatically research 
 
 FlowGenius is a modern, Electron-based note-taking application designed from the ground up with AI at its core. Unlike traditional note apps with AI features bolted on, FlowGenius uses artificial intelligence as the primary mechanism for content creation and organization, making knowledge capture and synthesis effortless.
 
+## Demo Screenshots
+
+[New note line-item](demo-pics/pic1.PNG)  
+[AI line-item content generator button](demo-pics/pic2.PNG)  
+[AI generated line-item content](demo-pics/pic3.PNG)  
+[Langchain flow diagram](demo-pics/pic4.PNG)  
+[Note summary - summary of all line-items for a note](demo-pics/pic5.PNG)  
+[Study plan to learn note line-items](demo-pics/pic6.PNG)  
+[Notes searchable and filterable](demo-pics/pic7.PNG)  
+[Place to paste your OpenAI API key](demo-pics/pic8.PNG)
+
 ## Features
 
 ### Core Features
